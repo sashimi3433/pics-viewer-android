@@ -120,15 +120,24 @@ h1 {
   margin: 0;
 }
 
-.status {
+.actions {
+  margin: 0;
+}
+
+.button {
   display: inline-flex;
   align-items: center;
   min-height: 40px;
   padding: 0 16px;
   border-radius: 8px;
-  border: 1px solid var(--border);
+  background: var(--accent);
+  color: #18181b;
   font-weight: 600;
-  justify-self: start;
+  text-decoration: none;
+}
+
+.button:hover {
+  background: #468fbc;
 }
 
 h2 {
