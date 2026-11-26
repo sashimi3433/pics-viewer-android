@@ -174,7 +174,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val df = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.JAPAN)
         val logs = _state.value.logs
         return buildString {
-            appendLine("# PICS ビューア 受信ログ")
+            appendLine("# 高度化PICSビューア 受信ログ")
             appendLine("# ${logs.size} 件 / ${df.format(Date(System.currentTimeMillis()))} 時点の最新 ${logs.size} 件")
             logs.asReversed().forEach { item ->
                 val f = item.frame
