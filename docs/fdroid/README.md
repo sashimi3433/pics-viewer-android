@@ -20,7 +20,7 @@ F-Droid は公式リポジトリ側でソースからビルドし、F-Droid の�
 2. `fastlane/metadata/android/ja-JP/changelogs/<versionCode>.txt` にリリースノートを書く
 3. main にマージしたら `v<versionName>` のタグを打って push する
    ```sh
-   git tag v1.5.2 && git push origin v1.5.2
+   git tag v1.7.0 && git push origin v1.7.0
    ```
    F-Droid はタグを見て新しい版を見つけ（`UpdateCheckMode: Tags`）、ビルド設定を自動で足す（`AutoUpdateMode: Version`）。
    反映までは数日かかる
