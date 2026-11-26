@@ -443,7 +443,7 @@ private fun NearestCard(
 ) {
     ElevatedCard(
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
             if (nearest.isEmpty()) {

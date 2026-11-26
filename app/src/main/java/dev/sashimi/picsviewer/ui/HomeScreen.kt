@@ -103,7 +103,8 @@ fun HomeScreen(
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.surface,
+        // セグメント化リストは surfaceContainer の上に置く（M3E の既定）
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
             TopAppBar(
                 title = { Text("信号ビューア", Modifier.semantics { heading() }) },
@@ -118,6 +119,10 @@ fun HomeScreen(
                     }
                     Spacer(Modifier.width(8.dp))
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ),
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -287,7 +292,7 @@ private fun SignalPanel(
 
     Card(
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(Modifier.fillMaxWidth().padding(16.dp).alpha(if (stale) 0.62f else 1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -375,7 +380,7 @@ private fun HeroChannel(signal: PedestrianSignal, index: Int, onPin: () -> Unit)
     Card(
         onClick = onPin,
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Column(
             Modifier
@@ -468,7 +473,7 @@ private fun ChannelTile(
     onClick: () -> Unit,
 ) {
     val color = if (signal.hasData) signal.state.color() else SignalIdle.copy(alpha = 0.6f)
-    val base = MaterialTheme.colorScheme.surfaceContainerHighest
+    val base = MaterialTheme.colorScheme.surfaceContainerHigh
     Card(
         onClick = onClick,
         // 文字を大きくしても切れないよう高さは最小値で指定する
@@ -583,9 +588,9 @@ private fun OtherDevices(
             SegmentedListItem(
                 onClick = { onSelect(device.key) },
                 shapes = ListItemDefaults.segmentedShapes(index = index, count = shown.size),
-                supportingContent = { Text(device.coordinateLabel) },
-                trailingContent = {
-                    Text("${device.rssi} dBm ・ ${relativeTime(device.lastSeen, now)}")
+                // 文字を大きくしても見出しが潰れないよう、補足は下の行にまとめる
+                supportingContent = {
+                    Text("${device.coordinateLabel}\n${device.rssi} dBm ・ ${relativeTime(device.lastSeen, now)}")
                 },
             ) {
                 Text(device.intersectionId, fontFamily = FontFamily.Monospace)
@@ -597,7 +602,7 @@ private fun OtherDevices(
 @Composable
 private fun LogCard(logs: List<LogItem>, onShare: () -> Unit) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -671,12 +676,11 @@ private fun InfoLine(label: String, value: String, mono: Boolean = false) {
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        // 文字拡大時に切らずに折り返す
         Text(
             value,
             style = MaterialTheme.typography.bodySmall,
             fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
     }
 }
