@@ -1,42 +1,60 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.compose.compiler)
 }
+
+// Play アップロード鍵は Bastion から scripts/build-release.sh が一時ファイルに取り出して渡す。
+// 鍵そのものやパスワードはリポジトリに置かない。
+val uploadStoreFile: String? = System.getenv("PICS_UPLOAD_STORE_FILE")
 
 android {
     namespace = "dev.sashimi.picsviewer"
-    compileSdk = 35
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
-        applicationId = "dev.sashimi.picsviewer"
+        applicationId = "com.sessapps.advanced_pics_viewer"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 5
-        versionName = "1.4.0"
-        resourceConfigurations += listOf("ja", "en")
+        targetSdk = 36
+        versionCode = 6
+        versionName = "1.5.0"
+    }
+
+    androidResources {
+        localeFilters += listOf("ja", "en")
+    }
+
+    signingConfigs {
+        if (uploadStoreFile != null) {
+            create("upload") {
+                storeFile = file(uploadStoreFile)
+                storePassword = System.getenv("PICS_UPLOAD_STORE_PASSWORD")
+                keyAlias = System.getenv("PICS_UPLOAD_KEY_ALIAS")
+                keyPassword = System.getenv("PICS_UPLOAD_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         debug {
-            // 実機配布用に軽量化する（開発中は minify を切っておく）
-            isMinifyEnabled = false
+            applicationIdSuffix = ".debug"
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("debug")
+            if (uploadStoreFile != null) {
+                signingConfig = signingConfigs.getByName("upload")
+            }
         }
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
     }
 
     buildFeatures {
@@ -48,21 +66,29 @@ android {
     }
 }
 
+kotlin {
+    jvmToolchain(17)
+    compilerOptions {
+        optIn.add("androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
+    }
+}
+
 dependencies {
-    implementation(platform("androidx.compose:compose-bom:2024.10.01"))
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.activity:activity-compose:1.9.3")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.foundation:foundation")
-    implementation("androidx.compose.material3:material3")
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.core)
 
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
+    implementation(libs.osmdroid)
 
-    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation(libs.androidx.compose.ui.tooling)
 
-    testImplementation("junit:junit:4.13.2")
+    testImplementation(libs.junit)
 }
