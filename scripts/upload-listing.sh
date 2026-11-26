@@ -9,6 +9,9 @@
 #   images/icon.png                  アプリアイコン（512×512、元データ docs/store/icon.svg）
 #   images/featureGraphic.png        フィーチャーグラフィック（1024×500、元データ docs/store/feature-graphic.html）
 #   images/phoneScreenshots/*.png    スマートフォンのスクリーンショット（ファイル名順）
+#   images/sevenInchScreenshots/*.png  7 インチタブレット
+#   images/tenInchScreenshots/*.png    10 インチタブレット
+# スクリーンショットは docs/store/promo.py で docs/store/raw/ から作る
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -61,6 +64,8 @@ images = {
     "icon": [f"{meta}/images/icon.png"],
     "featureGraphic": [f"{meta}/images/featureGraphic.png"],
     "phoneScreenshots": sorted(glob.glob(f"{meta}/images/phoneScreenshots/*.png")),
+    "sevenInchScreenshots": sorted(glob.glob(f"{meta}/images/sevenInchScreenshots/*.png")),
+    "tenInchScreenshots": sorted(glob.glob(f"{meta}/images/tenInchScreenshots/*.png")),
 }
 for kind, files in images.items():
     check(f"Delete {kind}", requests.delete(f"{base}/listings/{lang}/{kind}", headers=h))

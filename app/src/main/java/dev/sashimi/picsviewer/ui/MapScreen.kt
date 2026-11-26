@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -56,6 +57,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -163,7 +165,12 @@ fun MapScreen(onBack: () -> Unit) {
     val mapView = rememberMapViewWithLifecycle()
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var style by remember { mutableStateOf<Style?>(null) }
-    var selected by remember { mutableStateOf<PicsIntersection?>(null) }
+    // 折りたたみ・回転で画面が作り直されても、選んだ交差点と地図の位置を保つ
+    var selectedIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    val selected = selectedIndex?.let { intersections.getOrNull(it) }
+    var savedCamera by rememberSaveable { mutableStateOf<DoubleArray?>(null) }
+    // 作り直し前の位置があるときは、現在地へ勝手に動かさない
+    val cameraRestored = remember { savedCamera != null }
     var location by remember { mutableStateOf<Location?>(null) }
     var nearest by remember {
         mutableStateOf<List<Pair<PicsIntersection, Double>>>(emptyList())
@@ -174,7 +181,7 @@ fun MapScreen(onBack: () -> Unit) {
         map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(latitude, longitude), zoom))
     }
 
-    fun refreshLocation() {
+    fun refreshLocation(move: Boolean = true) {
         if (!hasLocationPermission(context)) return
         requestLocation(context) { result ->
             if (result != null) {
@@ -184,7 +191,7 @@ fun MapScreen(onBack: () -> Unit) {
                     result.latitude,
                     result.longitude,
                 )
-                moveTo(result.latitude, result.longitude, 13.0)
+                if (move) moveTo(result.latitude, result.longitude, 13.0)
             }
         }
     }
@@ -200,13 +207,19 @@ fun MapScreen(onBack: () -> Unit) {
     LaunchedEffect(styleUri) {
         mapView.getMapAsync { m ->
             if (map == null) {
-                m.cameraPosition = JAPAN
+                m.cameraPosition = savedCamera?.let { (lat, lon, zoom) ->
+                    CameraPosition.Builder().target(LatLng(lat, lon)).zoom(zoom).build()
+                } ?: JAPAN
+                m.addOnCameraIdleListener {
+                    val target = m.cameraPosition.target ?: return@addOnCameraIdleListener
+                    savedCamera = doubleArrayOf(target.latitude, target.longitude, m.cameraPosition.zoom)
+                }
                 m.uiSettings.isRotateGesturesEnabled = false
                 m.uiSettings.isTiltGesturesEnabled = false
                 m.addOnMapClickListener { point ->
                     val screen = m.projection.toScreenLocation(point)
                     handleMapTap(m, screen, intersections, context.resources.displayMetrics.density) {
-                        selected = it
+                        selectedIndex = intersections.indexOf(it)
                     }
                 }
                 map = m
@@ -228,10 +241,12 @@ fun MapScreen(onBack: () -> Unit) {
 
     // 権限がある場合は開いた時点で現在地を取得する
     LaunchedEffect(map, hasLocation) {
-        if (map != null && hasLocation && location == null) refreshLocation()
+        if (map != null && hasLocation && location == null) refreshLocation(move = !cameraRestored)
     }
 
-    Box(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // 広げたフォルダブル・タブレットでは、一覧を画面いっぱいに広げず左下にパネルとして置く
+        val wide = maxWidth >= 700.dp
         AndroidView(
             modifier = Modifier.fillMaxSize().semantics {
                 contentDescription = "対応交差点の地図。近くの交差点は画面下の一覧から選べます"
@@ -243,7 +258,7 @@ fun MapScreen(onBack: () -> Unit) {
             Modifier
                 .align(Alignment.TopCenter)
                 .safeDrawingPadding()
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .padding(horizontal = if (wide) 24.dp else 12.dp, vertical = 8.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -295,10 +310,10 @@ fun MapScreen(onBack: () -> Unit) {
 
         Column(
             Modifier
-                .align(Alignment.BottomCenter)
+                .align(if (wide) Alignment.BottomStart else Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 12.dp)
-                .fillMaxWidth(),
+                .padding(horizontal = if (wide) 24.dp else 12.dp, vertical = if (wide) 24.dp else 12.dp)
+                .then(if (wide) Modifier.width(420.dp) else Modifier.fillMaxWidth()),
         ) {
             val current = selected
             if (current != null) {
@@ -312,7 +327,7 @@ fun MapScreen(onBack: () -> Unit) {
                             current.longitude,
                         )
                     },
-                    onClose = { selected = null },
+                    onClose = { selectedIndex = null },
                 )
             } else {
                 NearestCard(
@@ -320,7 +335,7 @@ fun MapScreen(onBack: () -> Unit) {
                     total = intersections.size,
                     hasLocation = hasLocation,
                     onPick = { item ->
-                        selected = item
+                        selectedIndex = intersections.indexOf(item)
                         moveTo(item.latitude, item.longitude, 15.0)
                     },
                     onRequestLocation = {
