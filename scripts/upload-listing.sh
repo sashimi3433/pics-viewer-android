@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
-# ストアの掲載情報（docs/store/listing.json）と画像を Play Developer API で登録する。
-# 画像は種類ごとに一度消してから docs/store の内容で入れ直す。
+# ストアの掲載情報と画像（fastlane/metadata/android/ja-JP。F-Droid も同じものを読む）を
+# Play Developer API で登録する。画像は種類ごとに一度消してから入れ直す。
 #
 #   scripts/upload-listing.sh
 #
 # 使う画像:
-#   docs/store/icon-512.png         アプリアイコン（512×512）
-#   docs/store/feature-graphic.png  フィーチャーグラフィック（1024×500、元データ feature-graphic.html）
-#   docs/store/phone/*.png          スマートフォンのスクリーンショット（ファイル名順）
+#   title.txt / short_description.txt / full_description.txt
+#   images/icon.png                  アプリアイコン（512×512、元データ docs/store/icon.svg）
+#   images/featureGraphic.png        フィーチャーグラフィック（1024×500、元データ docs/store/feature-graphic.html）
+#   images/phoneScreenshots/*.png    スマートフォンのスクリーンショット（ファイル名順）
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PACKAGE_NAME="${PACKAGE_NAME:-com.sessapps.advanced_pics_viewer}"
+CONTACT_EMAIL="${CONTACT_EMAIL:-contact@sessapps.com}"
+CONTACT_WEBSITE="${CONTACT_WEBSITE:-https://advanced-pics.sessapps.com/}"
 
 bastion secret get --name gcp-sessapps-playconsoleapi-sa --raw |
   uv run -q --with google-auth --with requests python3 -I -c '
@@ -19,9 +22,10 @@ import glob, json, sys, requests
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 
-pkg = sys.argv[1]
-listing = json.load(open("docs/store/listing.json"))
-lang = listing["language"]
+pkg, email, website = sys.argv[1:4]
+lang = "ja-JP"
+meta = f"fastlane/metadata/android/{lang}"
+text = lambda name: open(f"{meta}/{name}.txt").read().strip()
 
 creds = service_account.Credentials.from_service_account_info(
     json.load(sys.stdin), scopes=["https://www.googleapis.com/auth/androidpublisher"])
@@ -43,20 +47,20 @@ def check(step, r):
 
 check("Details", requests.patch(f"{base}/details", headers=h, json={
     "defaultLanguage": lang,
-    "contactEmail": listing["contactEmail"],
-    "contactWebsite": listing["contactWebsite"],
+    "contactEmail": email,
+    "contactWebsite": website,
 }))
 check("Listing", requests.put(f"{base}/listings/{lang}", headers=h, json={
     "language": lang,
-    "title": listing["title"],
-    "shortDescription": listing["shortDescription"],
-    "fullDescription": listing["fullDescription"],
+    "title": text("title"),
+    "shortDescription": text("short_description"),
+    "fullDescription": text("full_description"),
 }))
 
 images = {
-    "icon": ["docs/store/icon-512.png"],
-    "featureGraphic": ["docs/store/feature-graphic.png"],
-    "phoneScreenshots": sorted(glob.glob("docs/store/phone/*.png")),
+    "icon": [f"{meta}/images/icon.png"],
+    "featureGraphic": [f"{meta}/images/featureGraphic.png"],
+    "phoneScreenshots": sorted(glob.glob(f"{meta}/images/phoneScreenshots/*.png")),
 }
 for kind, files in images.items():
     check(f"Delete {kind}", requests.delete(f"{base}/listings/{lang}/{kind}", headers=h))
@@ -69,4 +73,4 @@ for kind, files in images.items():
 
 check("Commit", requests.post(f"{base}:commit", headers=h))
 print(f"Committed listing ({lang})")
-' "$PACKAGE_NAME"
+' "$PACKAGE_NAME" "$CONTACT_EMAIL" "$CONTACT_WEBSITE"

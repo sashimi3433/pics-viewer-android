@@ -24,7 +24,9 @@ Android 端末で受信して表示するアプリです。受信専用で、信
 
 ## 対応交差点マップ
 
-- データ: 警察庁「高度化PICS整備交差点」リスト（596箇所、`assets/pics_intersections.json`）
+- データ: 警察庁「全国高度化PICS整備交差点」（令和7年5月1日現在、596箇所）を加工して作成（`assets/pics_intersections.json`）
+  - 出典: 警察庁ウェブサイト https://www.npa.go.jp/bureau/traffic/seibi2/annzen-shisetu/utms/pics.html
+  - 利用条件: [公共データ利用規約（第1.0版）](https://www.digital.go.jp/resources/open_data/public_data_license_v1.0)。警察庁が作成したデータではない
 - 地図: osmdroid + OpenStreetMap タイル（APIキー不要）
 - 低ズームでは件数バッジにクラスタリング、拡大すると個別ピン
 - 現在地を許可すると、近い順に3件を距離付きで表示
@@ -88,3 +90,13 @@ export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
   自治体・警察庁の整備状況によります。
 - Android 11 以下では BLE スキャンのために位置情報サービスをONにする必要があります。
 - Company ID `0x01CE` は HOUWA SYSTEM DESIGN, k.k. に割り当てられています。
+
+## 配布
+
+- Google Play: [docs/play-console.md](docs/play-console.md)
+- F-Droid: [docs/fdroid/README.md](docs/fdroid/README.md)
+
+## ライセンス
+
+ソースコードは [GNU General Public License v3.0 以降](LICENSE)（GPL-3.0-or-later）。
+交差点データは上記の公共データ利用規約、地図は © OpenStreetMap contributors（ODbL）に従う。
