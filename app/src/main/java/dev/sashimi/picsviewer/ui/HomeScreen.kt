@@ -1,46 +1,50 @@
 package dev.sashimi.picsviewer.ui
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Badge
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ContainedLoadingIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -48,18 +52,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.sashimi.picsviewer.LogItem
 import dev.sashimi.picsviewer.UiState
 import dev.sashimi.picsviewer.model.DeviceState
@@ -90,110 +99,80 @@ fun HomeScreen(
         }
     }
     val device = state.selected
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp)
-            .padding(top = 6.dp, bottom = 28.dp)
-    ) {
-        Header(onSettings = onSettings, onMap = onMap)
-
-        Spacer(Modifier.height(14.dp))
-        StatusCard(
-            state = state,
-            permissionGranted = permissionGranted,
-            onToggleScan = onToggleScan,
-            onDemoToggle = onDemo,
-            onRequestBluetooth = onRequestBluetooth,
-        )
-
-        if (state.message != null) {
-            Spacer(Modifier.height(10.dp))
-            MessageBanner(state.message)
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        if (device == null) {
-            EmptyState(state = state, onDemo = onDemo)
-        } else {
-            SignalPanel(
-                device = device,
-                pin = state.pinOf(device),
-                stale = now - device.lastSeen > 5_000L,
-                now = now,
-                onPin = { index -> onPin(device.intersectionId, index) },
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        // セグメント化リストは surfaceContainer の上に置く（M3E の既定）
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        topBar = {
+            TopAppBar(
+                title = { Text("信号ビューア", Modifier.semantics { heading() }) },
+                subtitle = { Text("ADVANCED PICS") },
+                actions = {
+                    FilledTonalIconButton(onClick = onMap, shapes = IconButtonDefaults.shapes()) {
+                        Icon(Icons.Filled.Place, contentDescription = "対応交差点マップ")
+                    }
+                    Spacer(Modifier.width(4.dp))
+                    FilledTonalIconButton(onClick = onSettings, shapes = IconButtonDefaults.shapes()) {
+                        Icon(Icons.Filled.Settings, contentDescription = "設定")
+                    }
+                    Spacer(Modifier.width(8.dp))
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ),
+                scrollBehavior = scrollBehavior,
             )
-        }
-
-        if (state.devices.size > 1) {
-            Spacer(Modifier.height(14.dp))
-            OtherDevices(
-                devices = state.devices.filter { it.key != device?.key },
-                now = now,
-                onSelect = onSelectDevice,
-            )
-        }
-
-        Spacer(Modifier.height(14.dp))
-        LogCard(logs = state.logs, onShare = onShareLogs)
-    }
-}
-
-@Composable
-private fun Header(onSettings: () -> Unit, onMap: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                "ADVANCED PICS",
-                style = MaterialTheme.typography.labelSmall,
-                letterSpacing = 2.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                "信号ビューア",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        IconButton(
-            onClick = onMap,
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        },
+    ) { padding ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(top = 4.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Icon(
-                Icons.Filled.Place,
-                contentDescription = "対応交差点マップ",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            StatusItem(
+                state = state,
+                permissionGranted = permissionGranted,
+                onToggleScan = onToggleScan,
+                onDemoToggle = onDemo,
+                onRequestBluetooth = onRequestBluetooth,
             )
-        }
-        Spacer(Modifier.width(8.dp))
-        IconButton(
-            onClick = onSettings,
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            Icon(
-                Icons.Filled.Settings,
-                contentDescription = "設定",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+
+            if (state.message != null) MessageBanner(state.message)
+
+            if (device == null) {
+                EmptyState(state = state, onDemo = onDemo)
+            } else {
+                SignalPanel(
+                    device = device,
+                    pin = state.pinOf(device),
+                    stale = now - device.lastSeen > 5_000L,
+                    now = now,
+                    onPin = { index -> onPin(device.intersectionId, index) },
+                )
+            }
+
+            if (state.devices.size > 1) {
+                OtherDevices(
+                    devices = state.devices.filter { it.key != device?.key },
+                    now = now,
+                    onSelect = onSelectDevice,
+                )
+            }
+
+            LogCard(logs = state.logs, onShare = onShareLogs)
         }
     }
 }
 
 @Composable
-private fun StatusCard(
+private fun StatusItem(
     state: UiState,
     permissionGranted: Boolean,
     onToggleScan: () -> Unit,
@@ -230,46 +209,41 @@ private fun StatusCard(
             tone = SignalIdle
         }
     }
+    val (action, onAction) = when {
+        state.demo -> "終了" to onDemoToggle
+        !permissionGranted -> "許可" to onRequestBluetooth
+        !state.bluetoothOn -> "オンにする" to onRequestBluetooth
+        else -> (if (state.scanning) "停止" else "開始") to onToggleScan
+    }
 
-    GlassCard {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            PulsingDot(color = tone, pulsing = state.scanning && !state.demo)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Text(
-                    detail,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+    SegmentedListItem(
+        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        leadingContent = { PulsingDot(color = tone, pulsing = state.scanning && !state.demo) },
+        supportingContent = { Text(detail) },
+        trailingContent = {
+            FilledTonalButton(onClick = onAction, shapes = ButtonDefaults.shapes()) {
+                Text(action)
             }
-            when {
-                state.demo -> TextButton(onClick = onDemoToggle) { Text("終了") }
-                !permissionGranted -> TextButton(onClick = onRequestBluetooth) { Text("許可") }
-                !state.bluetoothOn -> TextButton(onClick = onRequestBluetooth) { Text("オンにする") }
-                else -> TextButton(onClick = onToggleScan) {
-                    Text(if (state.scanning) "停止" else "開始")
-                }
-            }
-        }
+        },
+    ) {
+        Text(label, style = MaterialTheme.typography.titleMediumEmphasized)
     }
 }
 
 @Composable
 private fun MessageBanner(message: String) {
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = SignalAmber.copy(alpha = 0.14f),
-        border = BorderStroke(1.dp, SignalAmber.copy(alpha = 0.35f)),
+    Card(
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        ),
     ) {
         Text(
             message,
             Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
 }
@@ -277,51 +251,32 @@ private fun MessageBanner(message: String) {
 @Composable
 private fun EmptyState(state: UiState, onDemo: () -> Unit) {
     Column(
-        Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp),
+        Modifier.fillMaxWidth().padding(top = 32.dp, bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        RadarPulse()
-        Spacer(Modifier.height(18.dp))
+        val reduceMotion = rememberReduceMotion()
+        if (reduceMotion) {
+            ContainedLoadingIndicator(progress = { 0.7f }, modifier = Modifier.size(96.dp).clearAndSetSemantics {})
+        } else {
+            ContainedLoadingIndicator(Modifier.size(96.dp).clearAndSetSemantics {})
+        }
+        Spacer(Modifier.height(20.dp))
         Text(
             if (state.scanning) "信号を探しています" else "受信を待っています",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleLargeEmphasized,
+            modifier = Modifier.semantics { heading() },
         )
         Spacer(Modifier.height(6.dp))
         Text(
             "高度化PICS対応の信号機の近くでお待ちください。\n見つかると信号の色と残り時間が表示されます。",
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(18.dp))
-        TextButton(onClick = onDemo) {
+        Spacer(Modifier.height(20.dp))
+        FilledTonalButton(onClick = onDemo, shapes = ButtonDefaults.shapes()) {
             Text(if (state.demo) "デモを終了" else "デモで表示を確認")
         }
-    }
-}
-
-@Composable
-private fun RadarPulse() {
-    val transition = rememberInfiniteTransition(label = "radar")
-    val progress by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(2200, easing = LinearEasing), RepeatMode.Restart),
-        label = "radarProgress",
-    )
-    val accent = MaterialTheme.colorScheme.primary
-    Canvas(Modifier.size(148.dp)) {
-        repeat(3) { index ->
-            val t = (progress + index / 3f) % 1f
-            drawCircle(
-                color = accent.copy(alpha = (1f - t) * 0.35f),
-                radius = size.minDimension / 2f * t,
-                style = Stroke(width = 1.5.dp.toPx()),
-            )
-        }
-        drawCircle(color = accent.copy(alpha = 0.18f), radius = size.minDimension / 2f)
-        drawCircle(color = accent, radius = 6.dp.toPx())
     }
 }
 
@@ -335,15 +290,17 @@ private fun SignalPanel(
 ) {
     val signals = device.signals.orEmpty()
 
-    GlassCard {
-        Column(Modifier.fillMaxWidth().padding(18.dp).alpha(if (stale) 0.62f else 1f)) {
+    Card(
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(16.dp).alpha(if (stale) 0.62f else 1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
+                Column(Modifier.weight(1f).semantics(mergeDescendants = true) { heading() }) {
                     Text(
                         "交差点 ${device.intersectionId}",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLargeEmphasized,
                         fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
                     )
                     Text(
                         device.identifier?.ifEmpty { null } ?: "送信機ID 受信待ち",
@@ -352,7 +309,15 @@ private fun SignalPanel(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                RssiBadge(device.rssi, stale)
+                Badge(
+                    modifier = Modifier.semantics {
+                        contentDescription = if (stale) "受信が途絶えています" else "電波強度 ${device.rssi} dBm"
+                    },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                ) {
+                    Text(if (stale) "受信待ち" else "${device.rssi} dBm", fontFamily = FontFamily.Monospace)
+                }
             }
 
             Spacer(Modifier.height(16.dp))
@@ -370,14 +335,14 @@ private fun SignalPanel(
                 }
             } else if (pin != null && signals.getOrNull(pin) != null) {
                 HeroChannel(signal = signals[pin], index = pin, onPin = { onPin(pin) })
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(12.dp))
                 CompactChannels(signals = signals, pinned = pin, onPin = onPin)
             } else {
                 ChannelGrid(signals = signals, onPin = onPin)
                 Spacer(Modifier.height(10.dp))
                 Text(
                     "自分の向きのランプをタップすると注目できます",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -397,8 +362,12 @@ private fun SignalPanel(
 @Composable
 private fun HeroChannel(signal: PedestrianSignal, index: Int, onPin: () -> Unit) {
     val color = if (signal.hasData) signal.state.color() else SignalIdle
-    val pulsing = signal.state == SignalState.BLINK_GREEN
+    val reduceMotion = rememberReduceMotion()
+    val pulsing = signal.state == SignalState.BLINK_GREEN && !reduceMotion
+    val description = signal.accessibilityDescription(index) +
+        if (signal.state == SignalState.BLINK_GREEN) "、点滅中" else ""
     val transition = rememberInfiniteTransition(label = "blink")
+    // 点滅は実際の信号機の点滅周期に合わせた表現なので、motion scheme ではなく固定周期にする
     val blinkAlpha by transition.animateFloat(
         initialValue = 0.4f,
         targetValue = 1f,
@@ -407,14 +376,22 @@ private fun HeroChannel(signal: PedestrianSignal, index: Int, onPin: () -> Unit)
     )
     val labelColor = if (pulsing) color.copy(alpha = blinkAlpha) else color
 
-    Surface(
+    // 外側 extraLarge(28dp) − 内側余白 → 内側は large(16dp)
+    Card(
         onClick = onPin,
-        shape = RoundedCornerShape(32.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.22f)),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Column(
-            Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 22.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 20.dp)
+                // 中身はまとめて 1 つの説明にし、変化したら読み上げる
+                .clearAndSetSemantics {
+                    contentDescription = description
+                    stateDescription = "注目中。タップで解除"
+                    liveRegion = LiveRegionMode.Polite
+                },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             SignalRing(
@@ -427,8 +404,7 @@ private fun HeroChannel(signal: PedestrianSignal, index: Int, onPin: () -> Unit)
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         if (signal.hasData) signal.state.label else "—",
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Black,
+                        style = MaterialTheme.typography.displaySmallEmphasized,
                         color = labelColor,
                     )
                     Text(
@@ -443,31 +419,26 @@ private fun HeroChannel(signal: PedestrianSignal, index: Int, onPin: () -> Unit)
 
             // 真下は常に信号色（青／赤）を維持する帯
             Surface(
-                shape = RoundedCornerShape(22.dp),
+                shape = MaterialTheme.shapes.medium,
                 color = color,
                 contentColor = onSignalColor(color),
             ) {
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 11.dp),
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        "チャンネル ${index + 1}",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                    Text("チャンネル ${index + 1}", style = MaterialTheme.typography.titleSmallEmphasized)
                     Spacer(Modifier.weight(1f))
                     Text(
                         if (signal.hasData) signal.state.label else "データなし",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Black,
+                        style = MaterialTheme.typography.titleMediumEmphasized,
                     )
                 }
             }
             Spacer(Modifier.height(8.dp))
             Text(
                 "タップで注目を解除",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -476,13 +447,14 @@ private fun HeroChannel(signal: PedestrianSignal, index: Int, onPin: () -> Unit)
 
 @Composable
 private fun ChannelGrid(signals: List<PedestrianSignal>, onPin: (Int) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         signals.chunked(2).forEachIndexed { rowIndex, row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEachIndexed { colIndex, signal ->
                     val index = rowIndex * 2 + colIndex
                     ChannelTile(
                         signal = signal,
+                        index = index,
                         modifier = Modifier.weight(1f),
                         onClick = { onPin(index) },
                     )
@@ -496,19 +468,28 @@ private fun ChannelGrid(signals: List<PedestrianSignal>, onPin: (Int) -> Unit) {
 @Composable
 private fun ChannelTile(
     signal: PedestrianSignal,
+    index: Int,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val color = if (signal.hasData) signal.state.color() else SignalIdle.copy(alpha = 0.6f)
-    Surface(
+    val base = MaterialTheme.colorScheme.surfaceContainerHigh
+    Card(
         onClick = onClick,
-        modifier = modifier.height(118.dp),
-        shape = RoundedCornerShape(26.dp),
-        color = color.copy(alpha = if (isSystemInDarkTheme()) 0.10f else 0.07f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.22f)),
+        // 文字を大きくしても切れないよう高さは最小値で指定する
+        modifier = modifier.heightIn(min = 118.dp),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.12f).compositeOver(base)),
     ) {
         Column(
-            Modifier.fillMaxSize().padding(10.dp),
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 118.dp)
+                .padding(10.dp)
+                .clearAndSetSemantics {
+                    contentDescription = signal.accessibilityDescription(index)
+                    stateDescription = "タップで注目"
+                },
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -521,17 +502,19 @@ private fun ChannelTile(
             ) {
                 Text(
                     if (signal.level != null) "${signal.level + 1}" else "–",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelLargeEmphasized,
                     color = color,
                 )
             }
             Spacer(Modifier.height(6.dp))
             Text(
                 if (signal.hasData) signal.state.label else "—",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (signal.hasData) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleMediumEmphasized,
+                color = if (signal.hasData) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
             )
         }
     }
@@ -547,91 +530,43 @@ private fun CompactChannels(
         signals.forEachIndexed { index, signal ->
             val color = if (signal.hasData) signal.state.color() else SignalIdle.copy(alpha = 0.5f)
             val active = index == pinned
-            Column(
-                Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable { onPin(index) }
-                    .padding(vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Surface(
+                selected = active,
+                onClick = { onPin(index) },
+                modifier = Modifier.weight(1f).semantics { role = Role.Tab },
+                shape = MaterialTheme.shapes.medium,
+                color = if (active) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+                contentColor = if (active) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
             ) {
-                SignalRing(
-                    level = signal.level,
-                    signalColor = if (active) color else color.copy(alpha = 0.45f),
-                    size = 30.dp,
-                    strokeFraction = 0.16f,
-                    indeterminate = signal.hasData && signal.level == null,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "${index + 1}",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
-                    color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Column(
+                    Modifier
+                        .padding(vertical = 6.dp)
+                        .clearAndSetSemantics { contentDescription = signal.accessibilityDescription(index) },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    SignalRing(
+                        level = signal.level,
+                        signalColor = if (active) color else color.copy(alpha = 0.45f),
+                        size = 30.dp,
+                        strokeFraction = 0.16f,
+                        indeterminate = signal.hasData && signal.level == null,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "${index + 1}",
+                        style = if (active) {
+                            MaterialTheme.typography.labelMediumEmphasized
+                        } else {
+                            MaterialTheme.typography.labelMedium
+                        },
+                    )
+                }
             }
         }
-    }
-}
-
-@Composable
-private fun SignalLamp(
-    color: Color,
-    size: androidx.compose.ui.unit.Dp,
-    pulsing: Boolean = false,
-    dim: Boolean = false,
-) {
-    val transition = rememberInfiniteTransition(label = "lamp")
-    val pulse by transition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(620), RepeatMode.Reverse),
-        label = "lampPulse",
-    )
-    val animatedColor by animateColorAsState(color, tween(220), label = "lampColor")
-    val a = (if (pulsing) pulse else 1f) * (if (dim) 0.45f else 1f)
-
-    Box(Modifier.size(size), contentAlignment = Alignment.Center) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        listOf(animatedColor.copy(alpha = 0.42f * a), Color.Transparent)
-                    ),
-                    CircleShape,
-                )
-        )
-        Box(
-            Modifier
-                .size(size * 0.52f)
-                .clip(CircleShape)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            animatedColor.copy(alpha = 0.95f * a),
-                            animatedColor.copy(alpha = 0.68f * a),
-                        )
-                    )
-                )
-                .border(1.dp, Color.White.copy(alpha = 0.3f * a), CircleShape)
-        )
-    }
-}
-
-@Composable
-private fun RssiBadge(rssi: Int, stale: Boolean) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-    ) {
-        Text(
-            if (stale) "受信待ち" else "$rssi dBm",
-            Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelSmall,
-            fontFamily = FontFamily.Monospace,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -641,40 +576,24 @@ private fun OtherDevices(
     now: Long,
     onSelect: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val shown = devices.take(4)
+    Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
         Text(
             "他の送信機",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Modifier.padding(start = 16.dp, top = 8.dp, bottom = 6.dp).semantics { heading() },
+            style = MaterialTheme.typography.labelLargeEmphasized,
+            color = MaterialTheme.colorScheme.primary,
         )
-        devices.take(4).forEach { device ->
-            Surface(
+        shown.forEachIndexed { index, device ->
+            SegmentedListItem(
                 onClick = { onSelect(device.key) },
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                shapes = ListItemDefaults.segmentedShapes(index = index, count = shown.size),
+                // 文字を大きくしても見出しが潰れないよう、補足は下の行にまとめる
+                supportingContent = {
+                    Text("${device.coordinateLabel}\n${device.rssi} dBm ・ ${relativeTime(device.lastSeen, now)}")
+                },
             ) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            device.intersectionId,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontFamily = FontFamily.Monospace,
-                        )
-                        Text(
-                            device.coordinateLabel,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Text(
-                        "${device.rssi} dBm ・ ${relativeTime(device.lastSeen, now)}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Text(device.intersectionId, fontFamily = FontFamily.Monospace)
             }
         }
     }
@@ -682,41 +601,43 @@ private fun OtherDevices(
 
 @Composable
 private fun LogCard(logs: List<LogItem>, onShare: () -> Unit) {
-    GlassCard {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "受信ログ",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    Modifier.semantics { heading() },
+                    style = MaterialTheme.typography.titleMediumEmphasized,
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "${logs.size} 件",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.weight(1f))
-                IconButton(onClick = onShare, enabled = logs.isNotEmpty()) {
-                    Icon(
-                        Icons.Filled.Share,
-                        contentDescription = "受信ログを共有",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                IconButton(
+                    onClick = onShare,
+                    shapes = IconButtonDefaults.shapes(),
+                    enabled = logs.isNotEmpty(),
+                ) {
+                    Icon(Icons.Filled.Share, contentDescription = "受信ログを共有")
                 }
             }
 
             if (logs.isEmpty()) {
                 Text(
                     "まだ受信していません",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp),
                 )
             } else {
                 val formatter = remember { SimpleDateFormat("HH:mm:ss.SSS", Locale.JAPAN) }
                 logs.take(6).forEach { item ->
-                    Column(Modifier.padding(vertical = 5.dp)) {
+                    Column(Modifier.padding(vertical = 5.dp).semantics(mergeDescendants = true) {}) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 formatter.format(Date(item.time)),
@@ -735,7 +656,7 @@ private fun LogCard(logs: List<LogItem>, onShare: () -> Unit) {
                             item.frame.raw.joinToString(" ") { String.format(Locale.ROOT, "%02X", it) },
                             style = MaterialTheme.typography.labelSmall,
                             fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -748,38 +669,25 @@ private fun LogCard(logs: List<LogItem>, onShare: () -> Unit) {
 
 @Composable
 private fun InfoLine(label: String, value: String, mono: Boolean = false) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).semantics(mergeDescendants = true) {}) {
         Text(
             label,
-            Modifier.width(76.dp),
+            Modifier.widthIn(min = 76.dp).padding(end = 8.dp),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        // 文字拡大時に切らずに折り返す
         Text(
             value,
             style = MaterialTheme.typography.bodySmall,
             fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
-    }
-}
-
-@Composable
-fun GlassCard(content: @Composable () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(26.dp),
-        color = MaterialTheme.colorScheme.surface.copy(
-            alpha = if (isSystemInDarkTheme()) 0.55f else 0.92f
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
-    ) {
-        content()
     }
 }
 
 @Composable
 private fun PulsingDot(color: Color, pulsing: Boolean) {
+    val animate = pulsing && !rememberReduceMotion()
     val transition = rememberInfiniteTransition(label = "dot")
     val pulse by transition.animateFloat(
         initialValue = 0.35f,
@@ -789,16 +697,10 @@ private fun PulsingDot(color: Color, pulsing: Boolean) {
     )
     Box(
         Modifier
-            .size(11.dp)
-            .alpha(if (pulsing) pulse else 1f)
+            .size(12.dp)
+            .alpha(if (animate) pulse else 1f)
             .background(color, CircleShape)
     )
-}
-
-private fun remainingLabel(signal: PedestrianSignal): String = when {
-    !signal.hasData -> "データなし"
-    signal.level != null -> "残り時間 ${signal.level + 1}/8"
-    else -> "残り時間 不明"
 }
 
 private fun relativeTime(then: Long, now: Long): String {
@@ -807,37 +709,6 @@ private fun relativeTime(then: Long, now: Long): String {
         seconds < 1 -> "たった今"
         seconds < 60 -> "${seconds}秒前"
         else -> "${seconds / 60}分前"
-    }
-}
-
-/**
- * 残り時間の8段階バー。公式アプリ「信GO!」も秒数ではなくバーで表示している。
- */
-@Composable
-private fun LevelBar(
-    level: Int?,
-    color: Color,
-    modifier: Modifier = Modifier,
-    height: Dp = 8.dp,
-    segments: Int = 8,
-) {
-    val filled = (level ?: -1) + 1
-    Row(
-        modifier.height(height),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        repeat(segments) { index ->
-            Box(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(
-                        if (index < filled) color.copy(alpha = 0.92f)
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-                    )
-            )
-        }
     }
 }
 

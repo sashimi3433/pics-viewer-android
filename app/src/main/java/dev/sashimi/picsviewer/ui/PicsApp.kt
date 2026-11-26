@@ -13,11 +13,9 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -28,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
@@ -134,11 +131,13 @@ fun PicsApp(vm: MainViewModel) {
     DisposableEffect(Unit) { onDispose { announcer.shutdown() } }
 
     val target = state.pinnedSignal(state.selected)
+    val screenReader = rememberTouchExplorationEnabled()
     var lastState by remember { mutableStateOf<SignalState?>(null) }
 
-    LaunchedEffect(target?.state, state.ttsEnabled) {
+    LaunchedEffect(target?.state, state.ttsEnabled, screenReader) {
         val signal = target ?: return@LaunchedEffect
-        if (!state.ttsEnabled || !signal.hasData) return@LaunchedEffect
+        // TalkBack 利用中は画面のライブリージョンが読み上げるので、独自 TTS は重ねない
+        if (!state.ttsEnabled || screenReader || !signal.hasData) return@LaunchedEffect
         if (signal.state == lastState) return@LaunchedEffect
         lastState = signal.state
         announcer.speak(signal.speech)
@@ -178,18 +177,11 @@ fun PicsApp(vm: MainViewModel) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.surface,
-                        MaterialTheme.colorScheme.background,
-                    )
-                )
-            )
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         Crossfade(
             targetState = screen,
-            animationSpec = tween(160),
+            animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
             label = "screen",
         ) { current ->
             when (current) {

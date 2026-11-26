@@ -1,6 +1,7 @@
 package dev.sashimi.picsviewer.ui
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -16,9 +17,6 @@ import android.os.Bundle
 import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,17 +30,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -52,8 +61,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -74,9 +83,11 @@ private fun hasLocationPermission(context: Context): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
         PackageManager.PERMISSION_GRANTED
 
+// 冒頭で権限を確認し、取り消し時の SecurityException も runCatching で受ける
+@SuppressLint("MissingPermission")
 private fun requestLocation(context: Context, onResult: (Location?) -> Unit) {
     val manager = context.getSystemService(LocationManager::class.java)
-    if (manager == null) {
+    if (manager == null || !hasLocationPermission(context)) {
         onResult(null)
         return
     }
@@ -105,6 +116,7 @@ private fun requestLocation(context: Context, onResult: (Location?) -> Unit) {
                 provider,
                 object : LocationListener {
                     override fun onLocationChanged(location: Location) = onResult(location)
+                    @Deprecated("Deprecated in Java")
                     override fun onStatusChanged(p: String?, status: Int, extras: Bundle?) = Unit
                     override fun onProviderEnabled(p: String) = Unit
                     override fun onProviderDisabled(p: String) = Unit
@@ -120,7 +132,8 @@ private fun requestLocation(context: Context, onResult: (Location?) -> Unit) {
 fun MapScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val intersections = remember { IntersectionRepository.load(context) }
-    val dark = isSystemInDarkTheme()
+    val clusterColor = MaterialTheme.colorScheme.primary.toArgb()
+    val onClusterColor = MaterialTheme.colorScheme.onPrimary.toArgb()
 
     var mapView by remember { mutableStateOf<MapView?>(null) }
     var selected by remember { mutableStateOf<PicsIntersection?>(null) }
@@ -162,7 +175,9 @@ fun MapScreen(onBack: () -> Unit) {
 
     Box(Modifier.fillMaxSize()) {
         AndroidView(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().semantics {
+                contentDescription = "対応交差点の地図。近くの交差点は画面下の一覧から選べます"
+            },
             factory = { ctx ->
                 val map = MapView(ctx)
                 map.setTileSource(TileSourceFactory.MAPNIK)
@@ -183,7 +198,7 @@ fun MapScreen(onBack: () -> Unit) {
                     clusterCache.getOrPut(count) {
                         android.graphics.drawable.BitmapDrawable(
                             ctx.resources,
-                            renderClusterBitmap(ctx, count),
+                            renderClusterBitmap(ctx, count, clusterColor, onClusterColor),
                         )
                     }
 
@@ -281,57 +296,49 @@ fun MapScreen(onBack: () -> Unit) {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = if (dark) 0.82f else 0.94f),
-                shadowElevation = 3.dp,
-            ) {
-                IconButton(onClick = onBack, modifier = Modifier.size(44.dp)) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "戻る",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
+            FilledTonalIconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "戻る")
             }
-            Spacer(Modifier.width(10.dp))
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = if (dark) 0.82f else 0.94f),
-                shadowElevation = 3.dp,
+            Spacer(Modifier.width(8.dp))
+            Card(
+                modifier = Modifier.weight(1f, fill = false).semantics { heading() },
+                shape = MaterialTheme.shapes.large,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
             ) {
                 Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
                     Text(
                         "対応交差点マップ",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleSmallEmphasized,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         "全国 ${intersections.size} 箇所",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-            Spacer(Modifier.weight(1f))
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = if (dark) 0.24f else 0.14f),
-                shadowElevation = 3.dp,
-            ) {
-                TextButton(
-                    onClick = {
-                        if (hasLocation) refreshLocation()
-                        else permissionLauncher.launch(
-                            arrayOf(
-                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                Manifest.permission.ACCESS_COARSE_LOCATION,
-                            )
+            Spacer(Modifier.width(8.dp))
+            FilledTonalButton(
+                onClick = {
+                    if (hasLocation) refreshLocation()
+                    else permissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
                         )
-                    }
-                ) {
-                    Text("現在地")
-                }
+                    )
+                },
+                shapes = ButtonDefaults.shapes(),
+            ) {
+                Icon(
+                    Icons.Filled.LocationOn,
+                    contentDescription = null,
+                    modifier = Modifier.size(ButtonDefaults.IconSize),
+                )
+                Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                Text("現在地")
             }
         }
 
@@ -386,30 +393,26 @@ private fun SelectedCard(
     distance: Double?,
     onClose: () -> Unit,
 ) {
-    Surface(
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surface.copy(
-            alpha = if (isSystemInDarkTheme()) 0.9f else 0.97f
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-        shadowElevation = 6.dp,
+    ElevatedCard(
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 14.dp),
+            Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 16.dp, bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
                 Text(
                     intersection.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMediumEmphasized,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
                     intersection.address,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -418,17 +421,13 @@ private fun SelectedCard(
                     Spacer(Modifier.height(4.dp))
                     Text(
                         "現在地から ${IntersectionRepository.formatDistance(distance)}",
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
-            IconButton(onClick = onClose) {
-                Icon(
-                    Icons.Filled.Close,
-                    contentDescription = "閉じる",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            IconButton(onClick = onClose, shapes = IconButtonDefaults.shapes()) {
+                Icon(Icons.Filled.Close, contentDescription = "閉じる")
             }
         }
     }
@@ -442,77 +441,64 @@ private fun NearestCard(
     onPick: (PicsIntersection) -> Unit,
     onRequestLocation: () -> Unit,
 ) {
-    Surface(
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surface.copy(
-            alpha = if (isSystemInDarkTheme()) 0.9f else 0.97f
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-        shadowElevation = 6.dp,
+    ElevatedCard(
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(Modifier.fillMaxWidth().padding(12.dp)) {
             if (nearest.isEmpty()) {
-                Text(
-                    if (hasLocation) "現在地を取得しています…" else "近くの対応交差点を表示",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    if (hasLocation) {
-                        "位置情報が取れるまでお待ちください"
-                    } else {
-                        "現在地を許可すると、近い順に対応交差点を出せます。地図はピンをタップして確認できます。"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (!hasLocation) {
-                    Spacer(Modifier.height(10.dp))
-                    TextButton(onClick = onRequestLocation) { Text("現在地を使う") }
+                Column(Modifier.padding(8.dp)) {
+                    Text(
+                        if (hasLocation) "現在地を取得しています…" else "近くの対応交差点を表示",
+                        style = MaterialTheme.typography.titleMediumEmphasized,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        if (hasLocation) {
+                            "位置情報が取れるまでお待ちください"
+                        } else {
+                            "現在地を許可すると、近い順に対応交差点を出せます。地図はピンをタップして確認できます。"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (!hasLocation) {
+                        Spacer(Modifier.height(12.dp))
+                        FilledTonalButton(onClick = onRequestLocation, shapes = ButtonDefaults.shapes()) {
+                            Text("現在地を使う")
+                        }
+                    }
                 }
             } else {
                 Text(
                     "近くの対応交差点",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMediumEmphasized,
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 8.dp).semantics { heading() },
                 )
-                Spacer(Modifier.height(8.dp))
-                nearest.forEach { (item, distance) ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable { onPick(item) }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                item.name,
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                item.address,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                    nearest.forEachIndexed { index, (item, distance) ->
+                        SegmentedListItem(
+                            onClick = { onPick(item) },
+                            shapes = ListItemDefaults.segmentedShapes(index = index, count = nearest.size),
+                            supportingContent = {
+                                Text(item.address, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            },
+                            trailingContent = {
+                                Text(
+                                    IntersectionRepository.formatDistance(distance),
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            },
+                        ) {
+                            Text(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        Spacer(Modifier.width(10.dp))
-                        Text(
-                            IntersectionRepository.formatDistance(distance),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
                     }
                 }
-                Spacer(Modifier.height(2.dp))
                 Text(
                     "全国 $total 箇所（警察庁「高度化PICS整備交差点」）",
-                    style = MaterialTheme.typography.labelSmall,
+                    Modifier.padding(start = 8.dp, top = 8.dp),
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -521,7 +507,7 @@ private fun NearestCard(
 }
 
 /** クラスタ用の丸バッジを描く（件数を表示）。 */
-private fun renderClusterBitmap(context: Context, count: Int): Bitmap {
+private fun renderClusterBitmap(context: Context, count: Int, fill: Int, onFill: Int): Bitmap {
     val density = context.resources.displayMetrics.density
     val size = (42 * density).toInt()
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
@@ -529,7 +515,7 @@ private fun renderClusterBitmap(context: Context, count: Int): Bitmap {
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     val radius = size / 2f - 2 * density
 
-    paint.color = Color.parseColor("#3A8DFF")
+    paint.color = fill
     canvas.drawCircle(size / 2f, size / 2f, radius, paint)
 
     paint.style = Paint.Style.STROKE
@@ -538,7 +524,7 @@ private fun renderClusterBitmap(context: Context, count: Int): Bitmap {
     canvas.drawCircle(size / 2f, size / 2f, radius, paint)
 
     paint.style = Paint.Style.FILL
-    paint.color = Color.WHITE
+    paint.color = onFill
     paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     paint.textAlign = Paint.Align.CENTER
     val label = count.toString()
