@@ -88,6 +88,7 @@ private fun SettingsPreview() {
             onDemo = {},
             onShareLogs = {},
             onClearLogs = {},
+            onClearMapCache = {},
         )
     }
 }

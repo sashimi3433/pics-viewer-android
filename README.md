@@ -27,8 +27,9 @@ Android 端末で受信して表示するアプリです。受信専用で、信
 - データ: 警察庁「全国高度化PICS整備交差点」（令和7年5月1日現在、596箇所）を加工して作成（`assets/pics_intersections.json`）
   - 出典: 警察庁ウェブサイト https://www.npa.go.jp/bureau/traffic/seibi2/annzen-shisetu/utms/pics.html
   - 利用条件: [公共データ利用規約（第1.0版）](https://www.digital.go.jp/resources/open_data/public_data_license_v1.0)。警察庁が作成したデータではない
-- 地図: osmdroid + OpenStreetMap タイル（APIキー不要）
-- 低ズームでは件数バッジにクラスタリング、拡大すると個別ピン
+- 地図: MapLibre + [OpenFreeMap](https://openfreemap.org/) のベクタータイル（API キー不要。ダークテーマでは暗い配色、地名は日本語）
+- 一度見た地図は端末内に最大 256MB キャッシュし、次から通信せずに表示（設定から消去できる）
+- 縮小すると件数入りの丸にまとめ、拡大すると個別のピン（丸をタップすると拡大）
 - 現在地を許可すると、近い順に3件を距離付きで表示
 
 
@@ -99,4 +100,4 @@ export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
 ## ライセンス
 
 ソースコードは [GNU General Public License v3.0 以降](LICENSE)（GPL-3.0-or-later）。
-交差点データは上記の公共データ利用規約、地図は © OpenStreetMap contributors（ODbL）に従う。
+交差点データは上記の公共データ利用規約、地図は OpenFreeMap © OpenMapTiles、データは © OpenStreetMap contributors（ODbL）。

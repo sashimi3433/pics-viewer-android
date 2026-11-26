@@ -4,19 +4,17 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Typeface
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.graphics.PointF
+import android.graphics.RectF
 import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,15 +65,31 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import dev.sashimi.picsviewer.R
 import dev.sashimi.picsviewer.data.IntersectionRepository
+import dev.sashimi.picsviewer.data.MapTiles
 import dev.sashimi.picsviewer.data.PicsIntersection
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.CopyrightOverlay
-import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.location.LocationComponentActivationOptions
+import org.maplibre.android.location.modes.RenderMode
+import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapView
+import org.maplibre.android.maps.Style
+import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.CircleLayer
+import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.layers.SymbolLayer
+import org.maplibre.android.style.sources.GeoJsonOptions
+import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.android.utils.BitmapUtils
+import org.maplibre.geojson.Feature
+import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.Point
 
 private fun hasLocationPermission(context: Context): Boolean =
     ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
@@ -128,20 +142,37 @@ private fun requestLocation(context: Context, onResult: (Location?) -> Unit) {
     }
 }
 
+private const val SOURCE_ID = "pics"
+private const val LAYER_CLUSTER = "pics-cluster"
+private const val LAYER_COUNT = "pics-count"
+private const val LAYER_PIN = "pics-pin"
+private const val IMAGE_PIN = "pics-pin"
+private const val PROP_INDEX = "index"
+
+/** 日本全体が入る位置と縮尺。 */
+private val JAPAN = CameraPosition.Builder().target(LatLng(37.3, 136.8)).zoom(4.4).build()
+
 @Composable
 fun MapScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val intersections = remember { IntersectionRepository.load(context) }
     val clusterColor = MaterialTheme.colorScheme.primary.toArgb()
     val onClusterColor = MaterialTheme.colorScheme.onPrimary.toArgb()
+    val styleUri = if (isSystemInDarkTheme()) MapTiles.STYLE_DARK else MapTiles.STYLE_LIGHT
 
-    var mapView by remember { mutableStateOf<MapView?>(null) }
+    val mapView = rememberMapViewWithLifecycle()
+    var map by remember { mutableStateOf<MapLibreMap?>(null) }
+    var style by remember { mutableStateOf<Style?>(null) }
     var selected by remember { mutableStateOf<PicsIntersection?>(null) }
     var location by remember { mutableStateOf<Location?>(null) }
     var nearest by remember {
         mutableStateOf<List<Pair<PicsIntersection, Double>>>(emptyList())
     }
     var hasLocation by remember { mutableStateOf(hasLocationPermission(context)) }
+
+    fun moveTo(latitude: Double, longitude: Double, zoom: Double) {
+        map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(latitude, longitude), zoom))
+    }
 
     fun refreshLocation() {
         if (!hasLocationPermission(context)) return
@@ -153,8 +184,7 @@ fun MapScreen(onBack: () -> Unit) {
                     result.latitude,
                     result.longitude,
                 )
-                mapView?.controller?.setZoom(14.0)
-                mapView?.controller?.animateTo(GeoPoint(result.latitude, result.longitude))
+                moveTo(result.latitude, result.longitude, 13.0)
             }
         }
     }
@@ -166,11 +196,39 @@ fun MapScreen(onBack: () -> Unit) {
         if (hasLocation) refreshLocation()
     }
 
-    DisposableEffect(Unit) { onDispose { mapView?.onDetach() } }
+    // 地図の準備とスタイル（ダークテーマに合わせて切り替える）の読み込み
+    LaunchedEffect(styleUri) {
+        mapView.getMapAsync { m ->
+            if (map == null) {
+                m.cameraPosition = JAPAN
+                m.uiSettings.isRotateGesturesEnabled = false
+                m.uiSettings.isTiltGesturesEnabled = false
+                m.addOnMapClickListener { point ->
+                    val screen = m.projection.toScreenLocation(point)
+                    handleMapTap(m, screen, intersections, context.resources.displayMetrics.density) {
+                        selected = it
+                    }
+                }
+                map = m
+            }
+            m.setStyle(Style.Builder().fromUri(styleUri)) { loaded ->
+                showJapaneseLabels(loaded)
+                addIntersections(context, loaded, intersections, clusterColor, onClusterColor)
+                style = loaded
+            }
+        }
+    }
+
+    // 現在地の表示（権限があるときだけ）
+    LaunchedEffect(style, hasLocation) {
+        val m = map ?: return@LaunchedEffect
+        val s = style ?: return@LaunchedEffect
+        if (hasLocation) enableMyLocation(context, m, s)
+    }
 
     // 権限がある場合は開いた時点で現在地を取得する
-    LaunchedEffect(mapView, hasLocation) {
-        if (mapView != null && hasLocation && location == null) refreshLocation()
+    LaunchedEffect(map, hasLocation) {
+        if (map != null && hasLocation && location == null) refreshLocation()
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -178,114 +236,7 @@ fun MapScreen(onBack: () -> Unit) {
             modifier = Modifier.fillMaxSize().semantics {
                 contentDescription = "対応交差点の地図。近くの交差点は画面下の一覧から選べます"
             },
-            factory = { ctx ->
-                val map = MapView(ctx)
-                map.setTileSource(TileSourceFactory.MAPNIK)
-                map.setMultiTouchControls(true)
-                map.setBuiltInZoomControls(false)
-                // 日本全体が入る縮尺（zoomToBoundingBox は osmdroid 6.1.20 で
-                // Projection.getCloserPixel が無限ループし ANR になるため使わない）
-                map.controller.setZoom(5.7)
-                map.controller.setCenter(GeoPoint(37.3, 136.8))
-                map.overlays.add(CopyrightOverlay(ctx))
-
-                val pin = ContextCompat.getDrawable(ctx, R.drawable.ic_pics_pin)
-                val clusterCache = HashMap<Int, android.graphics.drawable.BitmapDrawable>()
-                val active = mutableListOf<Marker>()
-                var currentCell = -1.0
-
-                fun clusterIcon(count: Int): android.graphics.drawable.BitmapDrawable =
-                    clusterCache.getOrPut(count) {
-                        android.graphics.drawable.BitmapDrawable(
-                            ctx.resources,
-                            renderClusterBitmap(ctx, count, clusterColor, onClusterColor),
-                        )
-                    }
-
-                fun rebuild(zoom: Double) {
-                    active.forEach { map.overlays.remove(it) }
-                    active.clear()
-
-                    val cell = cellForZoom(zoom)
-                    currentCell = cell
-
-                    if (cell == 0.0) {
-                        intersections.forEach { item ->
-                            val marker = Marker(map)
-                            marker.position = GeoPoint(item.latitude, item.longitude)
-                            marker.title = item.name
-                            marker.snippet = item.address
-                            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                            marker.icon = pin?.constantState?.newDrawable()
-                            marker.relatedObject = item
-                            marker.setOnMarkerClickListener { m, view ->
-                                (m.relatedObject as? PicsIntersection)?.let { selected = it }
-                                view.controller.animateTo(m.position)
-                                true
-                            }
-                            active.add(marker)
-                            map.overlays.add(marker)
-                        }
-                        return
-                    }
-
-                    val groups = intersections.groupBy {
-                        (Math.floor(it.latitude / cell).toInt() to
-                            Math.floor(it.longitude / cell).toInt())
-                    }
-                    groups.values.forEach { items ->
-                        val marker = Marker(map)
-                        val lat = items.sumOf { it.latitude } / items.size
-                        val lon = items.sumOf { it.longitude } / items.size
-                        marker.position = GeoPoint(lat, lon)
-                        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                        if (items.size == 1) {
-                            val item = items.first()
-                            marker.title = item.name
-                            marker.snippet = item.address
-                            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                            marker.icon = pin?.constantState?.newDrawable()
-                            marker.relatedObject = item
-                            marker.setOnMarkerClickListener { m, view ->
-                                (m.relatedObject as? PicsIntersection)?.let { selected = it }
-                                view.controller.animateTo(m.position)
-                                true
-                            }
-                        } else {
-                            marker.title = "${items.size} 箇所"
-                            marker.icon = clusterIcon(items.size)
-                            marker.setOnMarkerClickListener { m, view ->
-                                view.controller.setZoom(zoom + 2)
-                                view.controller.animateTo(m.position)
-                                true
-                            }
-                        }
-                        active.add(marker)
-                        map.overlays.add(marker)
-                    }
-                }
-
-                rebuild(map.zoomLevelDouble)
-                map.addMapListener(object : org.osmdroid.events.MapListener {
-                    override fun onScroll(event: org.osmdroid.events.ScrollEvent?): Boolean = false
-                    override fun onZoom(event: org.osmdroid.events.ZoomEvent?): Boolean {
-                        val z = event?.zoomLevel ?: return false
-                        val cell = cellForZoom(z)
-                        if (cell != currentCell) rebuild(z)
-                        return false
-                    }
-                })
-
-                if (hasLocationPermission(ctx)) {
-                    val myLocation = MyLocationNewOverlay(map)
-                    runCatching {
-                        myLocation.enableMyLocation()
-                        map.overlays.add(myLocation)
-                    }
-                }
-                mapView = map
-                map
-            },
+            factory = { mapView },
         )
 
         Row(
@@ -370,8 +321,7 @@ fun MapScreen(onBack: () -> Unit) {
                     hasLocation = hasLocation,
                     onPick = { item ->
                         selected = item
-                        mapView?.controller?.setZoom(16.0)
-                        mapView?.controller?.animateTo(GeoPoint(item.latitude, item.longitude))
+                        moveTo(item.latitude, item.longitude, 15.0)
                     },
                     onRequestLocation = {
                         permissionLauncher.launch(
@@ -506,47 +456,146 @@ private fun NearestCard(
     }
 }
 
-/** クラスタ用の丸バッジを描く（件数を表示）。 */
-private fun renderClusterBitmap(context: Context, count: Int, fill: Int, onFill: Int): Bitmap {
-    val density = context.resources.displayMetrics.density
-    val size = (42 * density).toInt()
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    val radius = size / 2f - 2 * density
-
-    paint.color = fill
-    canvas.drawCircle(size / 2f, size / 2f, radius, paint)
-
-    paint.style = Paint.Style.STROKE
-    paint.strokeWidth = 2f * density
-    paint.color = Color.WHITE
-    canvas.drawCircle(size / 2f, size / 2f, radius, paint)
-
-    paint.style = Paint.Style.FILL
-    paint.color = onFill
-    paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-    paint.textAlign = Paint.Align.CENTER
-    val label = count.toString()
-    paint.textSize = when {
-        count < 100 -> 15f
-        count < 1000 -> 12f
-        else -> 10f
-    } * density
-    val baseline = size / 2f - (paint.descent() + paint.ascent()) / 2f
-    canvas.drawText(label, size / 2f, baseline, paint)
-    return bitmap
+/** MapView を画面のライフサイクルに合わせて動かす。 */
+@Composable
+private fun rememberMapViewWithLifecycle(): MapView {
+    val context = LocalContext.current
+    val mapView = remember { MapView(context).apply { onCreate(null) } }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, mapView) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> mapView.onStart()
+                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                Lifecycle.Event.ON_STOP -> mapView.onStop()
+                else -> Unit
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose {
+            lifecycle.removeObserver(observer)
+            val state = lifecycle.currentState
+            if (state.isAtLeast(Lifecycle.State.RESUMED)) mapView.onPause()
+            if (state.isAtLeast(Lifecycle.State.STARTED)) mapView.onStop()
+            mapView.onDestroy()
+        }
+    }
+    return mapView
 }
 
-/** ズームに応じたクラスタの格子サイズ（度）。アイコンが重ならない間隔にする。 */
-private fun cellForZoom(zoom: Double): Double = when {
-    zoom >= 14.0 -> 0.0
-    zoom >= 12.5 -> 0.02
-    zoom >= 11.0 -> 0.06
-    zoom >= 10.0 -> 0.2
-    zoom >= 9.0 -> 0.4
-    zoom >= 8.0 -> 1.0
-    zoom >= 7.0 -> 2.0
-    zoom >= 6.0 -> 4.0
-    else -> 8.0
+/** OpenFreeMap のスタイルは「ローマ字＋現地語」の 2 行表記なので、日本語（なければ現地語）だけにする。 */
+private fun showJapaneseLabels(style: Style) {
+    val label = Expression.coalesce(
+        Expression.get("name:ja"),
+        Expression.get("name"),
+    )
+    style.layers.filterIsInstance<SymbolLayer>().forEach { layer ->
+        val field = layer.textField.expression?.toString() ?: return@forEach
+        if ("name" in field) layer.setProperties(PropertyFactory.textField(label))
+    }
+}
+
+/** 交差点をクラスタ付きのソースとして載せる。拡大すると個別のピンになる。 */
+private fun addIntersections(
+    context: Context,
+    style: Style,
+    intersections: List<PicsIntersection>,
+    clusterColor: Int,
+    onClusterColor: Int,
+) {
+    ContextCompat.getDrawable(context, R.drawable.ic_pics_pin)
+        ?.let { BitmapUtils.getBitmapFromDrawable(it) }
+        ?.let { style.addImage(IMAGE_PIN, it) }
+
+    val features = intersections.mapIndexed { index, item ->
+        Feature.fromGeometry(Point.fromLngLat(item.longitude, item.latitude)).apply {
+            addNumberProperty(PROP_INDEX, index)
+        }
+    }
+    style.addSource(
+        GeoJsonSource(
+            SOURCE_ID,
+            FeatureCollection.fromFeatures(features),
+            GeoJsonOptions().withCluster(true).withClusterMaxZoom(12).withClusterRadius(48),
+        )
+    )
+    val isCluster = Expression.has("point_count")
+    style.addLayer(
+        CircleLayer(LAYER_CLUSTER, SOURCE_ID).withFilter(isCluster).withProperties(
+            PropertyFactory.circleColor(clusterColor),
+            PropertyFactory.circleRadius(
+                Expression.step(
+                    Expression.get("point_count"),
+                    Expression.literal(16),
+                    Expression.stop(10, 19),
+                    Expression.stop(100, 23),
+                )
+            ),
+            PropertyFactory.circleStrokeColor(android.graphics.Color.WHITE),
+            PropertyFactory.circleStrokeWidth(2f),
+        )
+    )
+    style.addLayer(
+        SymbolLayer(LAYER_COUNT, SOURCE_ID).withFilter(isCluster).withProperties(
+            PropertyFactory.textField(Expression.toString(Expression.get("point_count"))),
+            PropertyFactory.textFont(arrayOf("Noto Sans Bold")),
+            PropertyFactory.textSize(14f),
+            PropertyFactory.textColor(onClusterColor),
+            PropertyFactory.textAllowOverlap(true),
+            PropertyFactory.textIgnorePlacement(true),
+        )
+    )
+    style.addLayer(
+        SymbolLayer(LAYER_PIN, SOURCE_ID).withFilter(Expression.not(isCluster)).withProperties(
+            PropertyFactory.iconImage(IMAGE_PIN),
+            PropertyFactory.iconAnchor("bottom"),
+            PropertyFactory.iconAllowOverlap(true),
+            PropertyFactory.iconIgnorePlacement(true),
+        )
+    )
+}
+
+/**
+ * 地図のタップ。指の大きさを見込んで周り 24dp の範囲を探し、
+ * ピンなら選択、クラスタなら拡大する。地図の他の場所なら何もしない。
+ */
+private fun handleMapTap(
+    map: MapLibreMap,
+    screen: PointF,
+    intersections: List<PicsIntersection>,
+    density: Float,
+    onSelect: (PicsIntersection) -> Unit,
+): Boolean {
+    val r = 24 * density
+    val area = RectF(screen.x - r, screen.y - r, screen.x + r, screen.y + r)
+    val pin = map.queryRenderedFeatures(area, LAYER_PIN).firstOrNull()
+    val index = pin?.getNumberProperty(PROP_INDEX)?.toInt()
+    if (index != null) {
+        val item = intersections.getOrNull(index) ?: return false
+        onSelect(item)
+        map.animateCamera(CameraUpdateFactory.newLatLng(LatLng(item.latitude, item.longitude)))
+        return true
+    }
+    val cluster = map.queryRenderedFeatures(area, LAYER_CLUSTER).firstOrNull() ?: return false
+    val point = cluster.geometry() as? Point ?: return false
+    map.animateCamera(
+        CameraUpdateFactory.newLatLngZoom(
+            LatLng(point.latitude(), point.longitude()),
+            map.cameraPosition.zoom + 2,
+        )
+    )
+    return true
+}
+
+@SuppressLint("MissingPermission")
+private fun enableMyLocation(context: Context, map: MapLibreMap, style: Style) {
+    if (!hasLocationPermission(context)) return
+    runCatching {
+        map.locationComponent.apply {
+            activateLocationComponent(LocationComponentActivationOptions.builder(context, style).build())
+            isLocationComponentEnabled = true
+            renderMode = RenderMode.NORMAL
+        }
+    }
 }

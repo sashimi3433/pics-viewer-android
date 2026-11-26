@@ -32,6 +32,6 @@ F-Droid は公式リポジトリ側でソースからビルドし、F-Droid の�
   同じ鍵にしたくなったら、再現可能ビルドにして `Binaries:` と `AllowedAPKSigningKeys:` を設定する
 - APK に依存関係メタデータ（Google の鍵で暗号化された情報）を入れない設定にしてある（`dependenciesInfo.includeInApk = false`）
 - 交差点データは警察庁の公開データ（公共データ利用規約 第1.0版）を加工したもの。出典と「加工して作成」の表記をアプリ・README・説明文に入れてある
-- 地図は OpenStreetMap のタイルサーバーを直接使う。Anti-Feature には当たらないが、利用者が増えるとタイル利用ポリシーでブロックされうる
+- 地図は MapLibre（オープンソース）と OpenFreeMap（無料の公開タイル）。Google Play 開発者サービスには依存しない
 - ビルドには AGP 9.5 / Gradle 9.9 / compileSdk 37.1 を使っている。F-Droid のビルドサーバーがこの SDK に追いついていないとビルドが失敗するので、
   マージリクエストのパイプラインで確認する
