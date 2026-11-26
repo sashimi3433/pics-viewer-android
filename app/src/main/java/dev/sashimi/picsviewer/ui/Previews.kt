@@ -2,6 +2,7 @@ package dev.sashimi.picsviewer.ui
 
 import android.content.res.Configuration
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import dev.sashimi.picsviewer.UiState
 import dev.sashimi.picsviewer.model.DeviceState
@@ -75,7 +76,13 @@ private fun HomeLargeFontPreview() = HomePreviewContent(sampleState(pinned = fal
 @Composable
 private fun HomeEmptyPreview() = HomePreviewContent(UiState(scanning = true, permissionGranted = true))
 
+@Preview(name = "Home フォルダブル（広げた状態）", device = Devices.FOLDABLE, showBackground = true)
+@Preview(name = "Home タブレット", device = Devices.TABLET, showBackground = true)
+@Composable
+private fun HomeWidePreview() = HomePreviewContent(sampleState(pinned = true))
+
 @Preview(name = "設定", widthDp = 412, heightDp = 1200, showBackground = true)
+@Preview(name = "設定 タブレット", device = Devices.TABLET, showBackground = true)
 @Composable
 private fun SettingsPreview() {
     PicsTheme(dynamicColor = false) {

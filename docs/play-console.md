@@ -33,7 +33,9 @@ scripts/upload-listing.sh
 - 文言: `title.txt`、`short_description.txt`（80 字以内）、`full_description.txt`（4000 字以内）。連絡先はスクリプトの既定値（contact@sessapps.com、https://advanced-pics.sessapps.com/）
 - アプリアイコン: `images/icon.png`（元データ `docs/store/icon.svg`）
 - フィーチャーグラフィック: `images/featureGraphic.png`（元データ `docs/store/feature-graphic.html` を Chrome のヘッドレスで 1024×500 に書き出す）
-- スマートフォンのスクリーンショット: `images/phoneScreenshots/*.png`（1080×1920。エミュレータで `wm size 1080x1920` とシステム UI のデモモードにして、アプリのデモ表示を撮った）
+- スクリーンショット（宣材画像）: `images/phoneScreenshots/`（1080×1920）、`sevenInchScreenshots/`（1440×2560）、`tenInchScreenshots/`（2560×1440）
+  - `python3 docs/store/promo.py` で、`docs/store/raw/` の実機スクリーンショットを端末の枠にはめて見出しを付け、書き出す（Chrome のヘッドレスで描画）
+  - 元のスクリーンショットはエミュレータで撮った。`wm size` / `wm density` で端末を切り替え（スマホ 1080×2400、7 インチ 1200×1920@320、10 インチ 1600×2560@320、広げたフォルダブル 2208×1840@420 と 1840×2208@420）、システム UI のデモモード（9:30・電池満タン）にして、アプリのデモ表示を撮る
 - リリースノート: `changelogs/<versionCode>.txt`（F-Droid が使う。Play には `upload-play.sh` の `NOTES` で渡す）
 - API で入れられないもの（Play Console で設定する）: カテゴリ（地図＆ナビ）、タグ、プライバシーポリシー URL、データ セーフティ
 

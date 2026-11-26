@@ -7,6 +7,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -126,15 +128,7 @@ fun HomeScreen(
             )
         },
     ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(top = 4.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+        val main: @Composable () -> Unit = {
             StatusItem(
                 state = state,
                 permissionGranted = permissionGranted,
@@ -156,7 +150,8 @@ fun HomeScreen(
                     onPin = { index -> onPin(device.intersectionId, index) },
                 )
             }
-
+        }
+        val side: @Composable () -> Unit = {
             if (state.devices.size > 1) {
                 OtherDevices(
                     devices = state.devices.filter { it.key != device?.key },
@@ -167,7 +162,42 @@ fun HomeScreen(
 
             LogCard(logs = state.logs, onShare = onShareLogs)
         }
+
+        BoxWithConstraints(
+            Modifier.fillMaxSize().padding(padding),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            if (maxWidth >= TwoPaneMinWidth) {
+                // 広げたフォルダブル・タブレット: 信号を左、他の送信機とログを右に並べる
+                Row(
+                    Modifier.widthIn(max = 1200.dp).fillMaxSize().padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                ) {
+                    PaneColumn(Modifier.weight(1.1f)) { main() }
+                    PaneColumn(Modifier.weight(0.9f)) { side() }
+                }
+            } else {
+                PaneColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                    main()
+                    side()
+                }
+            }
+        }
     }
+}
+
+/** 2 列に分ける幅。広げたフォルダブル（約 840dp）とタブレットが該当する。 */
+private val TwoPaneMinWidth = 700.dp
+
+@Composable
+private fun PaneColumn(modifier: Modifier, content: @Composable () -> Unit) {
+    Column(
+        modifier
+            .fillMaxHeight()
+            .verticalScroll(rememberScrollState())
+            .padding(top = 4.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) { content() }
 }
 
 @Composable
