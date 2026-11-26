@@ -18,10 +18,8 @@ F-Droid は公式リポジトリ側でソースからビルドし、F-Droid の�
 
 1. `app/build.gradle.kts` の `versionCode` / `versionName` を上げる
 2. `fastlane/metadata/android/ja-JP/changelogs/<versionCode>.txt` にリリースノートを書く
-3. main にマージしたら `v<versionName>` のタグを打って push する
-   ```sh
-   git tag v1.7.0 && git push origin v1.7.0
-   ```
+3. main にマージしたら、main を最新にして `scripts/build-release.sh --github-release` を実行する。
+   `v<versionName>` のタグが push され、GitHub のリリースに APK が付く
    F-Droid はタグを見て新しい版を見つけ（`UpdateCheckMode: Tags`）、ビルド設定を自動で足す（`AutoUpdateMode: Version`）。
    反映までは数日かかる
 

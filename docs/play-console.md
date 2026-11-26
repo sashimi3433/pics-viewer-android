@@ -9,7 +9,8 @@
 ## リリース手順
 
 ```sh
-scripts/build-release.sh          # Bastion の鍵で署名した AAB を作る
+scripts/build-release.sh          # Bastion の鍵で署名した AAB と APK を作る
+scripts/build-release.sh --github-release  # さらにタグを push し、GitHub のリリースに APK を添付する
 ```
 
 1. **初回だけ** Play Console → 内部テスト → 新しいリリース で
