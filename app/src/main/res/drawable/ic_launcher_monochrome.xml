@@ -1,13 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  テーマアイコン（Android 13+）用。システムが 1 色で塗るので、色ではなく形で上下を区別する:
+  上（赤）= 塗りつぶし、下（青）= リング。筐体は輪郭線。
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:pathData="M54,43 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0"
-        android:fillColor="#FFFFFFFF" />
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:pathData="M50,31.5 L58,31.5 A8.5,8.5 0 0,1 66.5,40 L66.5,68 A8.5,8.5 0 0,1 58,76.5 L50,76.5 A8.5,8.5 0 0,1 41.5,68 L41.5,40 A8.5,8.5 0 0,1 50,31.5 Z" />
     <path
-        android:pathData="M54,65 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0"
-        android:fillColor="#FFFFFFFF" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,43 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:pathData="M54,65 m-5.5,0 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0" />
 </vector>

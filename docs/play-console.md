@@ -24,6 +24,8 @@ scripts/build-release.sh          # Bastion の鍵で署名した AAB を作る
 
 ## ストアの掲載情報（下書き）
 
+- アプリアイコン（512×512）: `docs/store/icon-512.png`（元データ `docs/store/icon.svg`）
+
 - アプリ名: PICS ビューア
 - 簡単な説明（80 字以内）:
   高度化PICS対応の歩行者用信号の色と残り時間を、手元のスマホで確認できます。

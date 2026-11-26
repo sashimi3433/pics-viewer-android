@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 歩行者用信号機（上: 赤 / 下: 青）。セーフゾーン（中心から半径 33dp）に収める -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- 筐体 -->
     <path
-        android:pathData="M54,26 C66,26 72,33 72,43 L72,65 C72,75 66,82 54,82 C42,82 36,75 36,65 L36,43 C36,33 42,26 54,26 Z"
-        android:strokeColor="#33FFFFFF"
-        android:strokeWidth="2"
-        android:fillColor="#00000000" />
+        android:fillColor="#FF3F3F46"
+        android:pathData="M50,30 L58,30 A10,10 0 0,1 68,40 L68,68 A10,10 0 0,1 58,78 L50,78 A10,10 0 0,1 40,68 L40,40 A10,10 0 0,1 50,30 Z" />
+    <!-- 赤ランプ -->
     <path
-        android:pathData="M54,43 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0"
-        android:fillColor="#FFFF453A" />
+        android:fillColor="#FFFF453A"
+        android:pathData="M54,43 m-8.5,0 a8.5,8.5 0 1,0 17,0 a8.5,8.5 0 1,0 -17,0" />
+    <!-- 青ランプ -->
     <path
-        android:pathData="M54,65 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0"
-        android:fillColor="#FF32D74B" />
+        android:fillColor="#FF34D96B"
+        android:pathData="M54,65 m-8.5,0 a8.5,8.5 0 1,0 17,0 a8.5,8.5 0 1,0 -17,0" />
 </vector>
