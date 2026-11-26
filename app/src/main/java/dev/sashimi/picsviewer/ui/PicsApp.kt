@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothAdapter
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
@@ -33,6 +34,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.sashimi.picsviewer.data.MapTiles
 import dev.sashimi.picsviewer.MainViewModel
 import dev.sashimi.picsviewer.model.SignalState
 
@@ -194,6 +196,15 @@ fun PicsApp(vm: MainViewModel) {
                     onDemo = vm::setDemo,
                     onShareLogs = { shareLogs() },
                     onClearLogs = vm::clearLogs,
+                    onClearMapCache = {
+                        MapTiles.clearCache(context) { ok ->
+                            Toast.makeText(
+                                context,
+                                if (ok) "地図のキャッシュを消去しました" else "地図のキャッシュを消去できませんでした",
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    },
                 )
 
                 Screen.Map -> MapScreen(onBack = { screenName = Screen.Home.name })

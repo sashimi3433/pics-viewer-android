@@ -5,9 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import dev.sashimi.picsviewer.data.MapTiles
 import dev.sashimi.picsviewer.ui.PicsApp
 import dev.sashimi.picsviewer.ui.PicsTheme
-import org.osmdroid.config.Configuration
 
 class MainActivity : ComponentActivity() {
 
@@ -15,10 +15,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // osmdroid（地図）は User-Agent の設定が必須
-        Configuration.getInstance().userAgentValue = packageName
-        Configuration.getInstance()
-            .load(this, getSharedPreferences("osmdroid", MODE_PRIVATE))
+        // 地図（MapLibre）は MapView を作る前に初期化する
+        MapTiles.init(this)
 
         enableEdgeToEdge()
         setContent {

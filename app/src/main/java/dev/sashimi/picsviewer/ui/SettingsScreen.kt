@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,6 +51,7 @@ fun SettingsScreen(
     onDemo: (Boolean) -> Unit,
     onShareLogs: () -> Unit,
     onClearLogs: () -> Unit,
+    onClearMapCache: () -> Unit,
 ) {
     val context = LocalContext.current
     val versionName = remember {
@@ -108,7 +110,7 @@ fun SettingsScreen(
             item {
                 SegmentedListItem(
                     onClick = onShareLogs,
-                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
+                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
                     enabled = state.logs.isNotEmpty(),
                     leadingContent = { Icon(Icons.Filled.Share, contentDescription = null) },
                     trailingContent = {
@@ -119,10 +121,18 @@ fun SettingsScreen(
             item {
                 SegmentedListItem(
                     onClick = onClearLogs,
-                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
+                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
                     enabled = state.logs.isNotEmpty(),
                     leadingContent = { Icon(Icons.Filled.Delete, contentDescription = null) },
                 ) { Text("ログを消去") }
+            }
+            item {
+                SegmentedListItem(
+                    onClick = onClearMapCache,
+                    shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+                    leadingContent = { Icon(Icons.Filled.LocationOn, contentDescription = null) },
+                    supportingContent = { Text("一度見た地図は端末に残り、次から通信せずに表示します") },
+                ) { Text("地図のキャッシュを消去") }
             }
 
             item { SectionLabel("このアプリ") }

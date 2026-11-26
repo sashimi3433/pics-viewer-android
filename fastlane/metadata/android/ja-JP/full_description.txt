@@ -17,5 +17,5 @@
 
 ※ 道路を渡るときは、必ず信号機と周りの安全を自分の目で確かめてください。
 
-地図データ © OpenStreetMap contributors
+地図: OpenFreeMap © OpenMapTiles、データ © OpenStreetMap contributors
 交差点データ: 警察庁「全国高度化PICS整備交差点」を加工して作成

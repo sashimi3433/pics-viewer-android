@@ -19,8 +19,8 @@ android {
         applicationId = "com.sessapps.advanced_pics_viewer"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.5.2"
+        versionCode = 9
+        versionName = "1.6.0"
     }
 
     androidResources {
@@ -92,7 +92,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.core)
 
-    implementation(libs.osmdroid)
+    implementation(libs.maplibre.android)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 
