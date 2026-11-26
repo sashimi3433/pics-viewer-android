@@ -101,7 +101,7 @@ main {
   margin-bottom: 3rem;
 }
 
-.hero img {
+.hero .app-icon {
   width: 96px;
   height: 96px;
   border-radius: 22px;
@@ -122,6 +122,10 @@ h1 {
 
 .actions {
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
 }
 
 /* Google Play の公式バッジ。色・形は変えない。周りにバッジの高さの 1/4 以上の余白を取る */
