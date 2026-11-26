@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PICS ビューア — 歩行者用信号の色と残り時間をスマホで</title>
+    <meta
+      name="description"
+      content="高度化PICS対応の歩行者用信号機が Bluetooth で送っている信号情報を受信して、信号の色と残り時間を手元のスマホに表示する Android アプリです。"
+    />
+    <meta property="og:title" content="PICS ビューア" />
+    <meta property="og:description" content="高度化PICS対応の歩行者用信号の色と残り時間を、手元のスマホで確認できます。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://advanced-pics.sessapps.com/" />
+    <meta property="og:image" content="https://advanced-pics.sessapps.com/icon.png" />
+    <link rel="canonical" href="https://advanced-pics.sessapps.com/" />
+    <link rel="icon" type="image/png" href="/icon.png" />
+    <link rel="apple-touch-icon" href="/icon.png" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">本文へ移動</a>
+    <header class="site">
+      <div class="container">
+        <a class="name" href="/">PICS ビューア</a>
+        <nav aria-label="サイト内">
+          <a href="/privacy/">プライバシーポリシー</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <div class="container">
+        <section class="hero">
+          <img src="/icon.png" width="96" height="96" alt="" />
+          <h1>歩行者用信号の色と残り時間を、手元のスマホで。</h1>
+          <p class="lead">
+            高度化PICS（歩行者等支援情報通信システム）に対応した信号機が Bluetooth で送っている信号情報を受信して、
+            信号の色と残り時間を大きく表示する Android アプリです。
+          </p>
+          <p class="status">Google Play で公開準備中</p>
+        </section>
+
+        <h2>できること</h2>
+        <ul>
+          <li>信号の色（赤・青・青点滅）と残り時間を大きく表示</li>
+          <li>渡る向きのチャンネルを選んでおくと、色が変わったときに音声と振動で知らせる</li>
+          <li>TalkBack、文字サイズの拡大、アニメーションの削除に対応</li>
+          <li>全国の高度化PICS整備交差点を、地図と近い順の一覧で確認</li>
+          <li>信号機がない場所でも動きを確かめられるデモ表示</li>
+        </ul>
+
+        <h2>しくみ</h2>
+        <p>
+          高度化PICS対応の信号機は、信号の状態を Bluetooth Low Energy で周りに知らせています。
+          このアプリはその電波を受け取って表示するだけで、信号機へ何かを送ったり、信号を操作したりはしません。
+        </p>
+        <p>
+          アカウント登録は不要です。位置情報や受信した内容をアプリが外部へ送ることはありません。
+          詳しくは<a href="/privacy/">プライバシーポリシー</a>をご覧ください。
+        </p>
+
+        <h2>動作環境</h2>
+        <ul>
+          <li>Android 8.0 以上、Bluetooth Low Energy 対応端末</li>
+          <li>信号の受信には、高度化PICSが整備された交差点の近くにいる必要があります</li>
+        </ul>
+
+        <div class="note" role="note">
+          <p>
+            道路を渡るときは、必ず信号機と周りの安全を自分の目で確かめてください。
+            電波の状態や機器の不具合で、表示が遅れたり実際の信号と違ったりすることがあります。
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site">
+      <div class="container">
+        <span>© 2026 sessapps</span>
+        <span>
+          <a href="/privacy/">プライバシーポリシー</a> ・
+          <a href="mailto:contact@sessapps.com">お問い合わせ</a>
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>
