@@ -3,6 +3,11 @@
 高度化PICS 対応の歩行者用信号機が BLE アドバタイズで常時送信している信号情報を、
 Android 端末で受信して表示するアプリです。受信専用で、信号機への送信・制御は行いません。
 
+<a href="https://play.google.com/store/apps/details?id=com.sessapps.advanced_pics_viewer"><img src="site/public/google-play-badge.png" height="56" alt="Google Play で手に入れよう"></a>
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/sashimi3433/pics-viewer-android"><img src="site/public/obtainium-badge.png" height="64" alt="Obtainium に追加"></a>
+
+APK は [最新のリリース](https://github.com/sashimi3433/pics-viewer-android/releases/latest) からダウンロードできます。
+
 - パッケージ: `com.sessapps.advanced_pics_viewer`（デバッグ版は `.debug` 付き）
 - minSdk 26 / targetSdk 36
 - Kotlin + Jetpack Compose 1.13（Material 3 Expressive）
@@ -47,12 +52,11 @@ Android 端末で受信して表示するアプリです。受信専用で、信
 
 ## インストール
 
-```sh
-adb install -r app-debug.apk
-```
+- [Google Play](https://play.google.com/store/apps/details?id=com.sessapps.advanced_pics_viewer)
+- [Obtainium](https://github.com/ImranR98/Obtainium) にこのリポジトリの URL を追加すると、GitHub のリリースから自動で更新を受け取れます
+- [最新のリリース](https://github.com/sashimi3433/pics-viewer-android/releases/latest) から APK をダウンロードし、ファイルマネージャから開いてインストール（提供元不明のアプリの許可が必要）
 
-端末に直接コピーする場合は、ファイルマネージャから APK を開いてインストール
-（提供元不明のアプリの許可が必要）。
+GitHub の APK は Google Play 版と署名が異なります。切り替えるときは一度アンインストールしてください。
 
 初回起動時に Bluetooth のスキャン権限を求められます。許可すると自動で受信を始めます。
 
@@ -108,6 +112,9 @@ export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
 
 - Google Play: [docs/play-console.md](docs/play-console.md)
 - F-Droid: [docs/fdroid/README.md](docs/fdroid/README.md)
+- GitHub Releases（Obtainium もここを読む）: `v1.2.3` のタグを push したら、`scripts/build-release.sh` で作った
+  `app/build/outputs/apk/release/app-release.apk` を `advanced-pics-viewer-<versionName>.apk` として
+  `gh release create` で添付する
 
 ## ライセンス
 

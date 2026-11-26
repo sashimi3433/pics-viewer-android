@@ -141,8 +141,17 @@ h1 {
   width: auto;
 }
 
-/* GitHub へのボタン。Play バッジの見えている部分（約 145×43px、角丸 5px、灰色の枠）に合わせる */
-.source-button {
+/* Obtainium のバッジは透明な余白が広いので、見えている部分が Play バッジと同じ高さ（43px）になるよう大きめに置く */
+.store-badge.obtainium {
+  margin: -18px -24px;
+}
+
+.store-badge.obtainium img {
+  height: 64px;
+}
+
+/* APK・GitHub へのボタン。Play バッジの見えている部分（約 145×43px、角丸 5px、灰色の枠）に合わせる */
+.dark-button {
   display: inline-flex;
   flex-direction: column;
   justify-content: center;
@@ -158,13 +167,13 @@ h1 {
   line-height: 1.1;
 }
 
-.source-button-main {
+.dark-button-main {
   font-family: Inter, system-ui, sans-serif;
   font-weight: 600;
   font-size: 17px;
 }
 
-.source-button-sub {
+.dark-button-sub {
   font-size: 9px;
 }
 
