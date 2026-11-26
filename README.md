@@ -112,9 +112,10 @@ export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
 
 - Google Play: [docs/play-console.md](docs/play-console.md)
 - F-Droid: [docs/fdroid/README.md](docs/fdroid/README.md)
-- GitHub Releases（Obtainium もここを読む）: `v1.2.3` のタグを push したら、`scripts/build-release.sh` で作った
-  `app/build/outputs/apk/release/app-release.apk` を `advanced-pics-viewer-<versionName>.apk` として
-  `gh release create` で添付する
+- GitHub Releases（Obtainium と LP の APK ボタンもここを読む）: main を最新にして
+  `scripts/build-release.sh --github-release` を実行する。署名済み APK をビルドし、`v<versionName>` のタグを付けて push し、
+  `changelogs/<versionCode>.txt` をリリースノートにしたリリースへ `advanced-pics-viewer-<versionName>.apk` を添付する
+  （`DRY_RUN=1` で GitHub へ送らずに確認できる）
 
 ## ライセンス
 
