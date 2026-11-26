@@ -107,8 +107,7 @@ fun HomeScreen(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
             TopAppBar(
-                title = { Text("信号ビューア", Modifier.semantics { heading() }) },
-                subtitle = { Text("ADVANCED PICS") },
+                title = { Text("高度化PICSビューア", Modifier.semantics { heading() }) },
                 actions = {
                     FilledTonalIconButton(onClick = onMap, shapes = IconButtonDefaults.shapes()) {
                         Icon(Icons.Filled.Place, contentDescription = "対応交差点マップ")

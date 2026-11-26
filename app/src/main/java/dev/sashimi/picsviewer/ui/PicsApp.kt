@@ -166,7 +166,7 @@ fun PicsApp(vm: MainViewModel) {
     val shareLogs = {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "PICS ビューア 受信ログ")
+            putExtra(Intent.EXTRA_SUBJECT, "高度化PICSビューア 受信ログ")
             putExtra(Intent.EXTRA_TEXT, vm.logText())
         }
         context.startActivity(Intent.createChooser(intent, "受信ログを共有"))
