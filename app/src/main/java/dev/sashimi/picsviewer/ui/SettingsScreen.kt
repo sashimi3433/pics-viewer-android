@@ -7,8 +7,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -152,17 +155,29 @@ fun SettingsScreen(
                     ) { Text(value) }
                 }
             }
-            item {
+
+            item { SectionLabel("注意事項") }
+            items(Disclaimer) { paragraph ->
                 Text(
-                    "信号機から送信される公開電波を受信するだけで、送信や制御は行いません。",
-                    Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    style = MaterialTheme.typography.bodySmall,
+                    paragraph,
+                    Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            item { Spacer(Modifier.height(16.dp)) }
         }
     }
 }
+
+/** ストアの説明・サイトと同じ注意事項。 */
+private val Disclaimer = listOf(
+    "本アプリは、高度化PICSが発信する Bluetooth Low Energy（BLE）信号を受信・解析・可視化する非公式ツールです。",
+    "本アプリは、警察庁、都道府県警察、日本信号株式会社その他の関係機関による提供、認定、監修を受けたものではありません。",
+    "表示される情報には、通信遅延、受信障害、解析上の誤り等が含まれる可能性があります。本アプリの情報を道路横断、車両の運転その他の交通上の安全判断に使用しないでください。",
+    "道路を通行する際は、実際の交通信号機の表示、警察官等の指示および周囲の交通状況に従ってください。",
+    "本アプリは、交通信号機の操作、制御、信号の改変または再送信を行うものではありません。",
+)
 
 private fun LazyListScope.toggleSection(title: String, toggles: List<Toggle>) {
     item { SectionLabel(title) }
