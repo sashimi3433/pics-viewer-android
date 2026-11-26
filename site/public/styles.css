@@ -124,20 +124,17 @@ h1 {
   margin: 0;
 }
 
-.button {
-  display: inline-flex;
-  align-items: center;
-  min-height: 40px;
-  padding: 0 16px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #18181b;
-  font-weight: 600;
-  text-decoration: none;
+/* Google Play の公式バッジ。色・形は変えない。周りにバッジの高さの 1/4 以上の余白を取る */
+.store-badge {
+  display: inline-block;
+  padding: 14px;
+  margin: -14px;
 }
 
-.button:hover {
-  background: #468fbc;
+.store-badge img {
+  display: block;
+  height: 56px;
+  width: auto;
 }
 
 h2 {
