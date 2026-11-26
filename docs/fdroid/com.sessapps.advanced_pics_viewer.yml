@@ -13,14 +13,14 @@ RepoType: git
 Repo: https://github.com/sashimi3433/pics-viewer-android.git
 
 Builds:
-  - versionName: 1.7.0
-    versionCode: 10
-    commit: v1.7.0
+  - versionName: 1.7.1
+    versionCode: 11
+    commit: v1.7.1
     subdir: app
     gradle:
       - yes
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.7.0
-CurrentVersionCode: 10
+CurrentVersion: 1.7.1
+CurrentVersionCode: 11
