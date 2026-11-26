@@ -3,9 +3,10 @@
 高度化PICS 対応の歩行者用信号機が BLE アドバタイズで常時送信している信号情報を、
 Android 端末で受信して表示するアプリです。受信専用で、信号機への送信・制御は行いません。
 
-- パッケージ: `dev.sashimi.picsviewer`
-- minSdk 26 / targetSdk 35
-- Kotlin + Jetpack Compose (Material 3)
+- パッケージ: `com.sessapps.advanced_pics_viewer`（デバッグ版は `.debug` 付き）
+- minSdk 26 / targetSdk 36
+- Kotlin + Jetpack Compose 1.13（Material 3 Expressive）
+- リリース手順と Play Console 登録メモ: [docs/play-console.md](docs/play-console.md)
 
 ## できること
 
@@ -18,8 +19,8 @@ Android 端末で受信して表示するアプリです。受信専用で、信
 - 信号機がなくても確認できるデモモード（設定 or 空画面のリンクから）
 - 全国596箇所の高度化PICS整備交差点マップ（現在地から近い順・ピンタップで詳細）
 - 残り時間は円形9分割リング（下1つは長めの固定セグメントで常に信号色、残り8つがM3Eのprimary色で減少）
-- セグメントは角丸（M3E風）
-- Material 3 Expressive 風のUI + Material You（Android 12+ は壁紙の配色に追従）
+- Material 3 Expressive 標準コンポーネントの UI + Material You（Android 12+ は壁紙の配色に追従）
+- アクセシビリティ: TalkBack（信号の説明・変化の読み上げ・見出し）、文字サイズ拡大、アニメーション削除に対応
 
 ## 対応交差点マップ
 
