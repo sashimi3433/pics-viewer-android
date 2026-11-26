@@ -1,7 +1,6 @@
 package dev.sashimi.picsviewer.ui
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -15,6 +14,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.PI
@@ -46,13 +46,14 @@ fun SignalRing(
     val filled = ((level ?: -1) + 1).coerceIn(0, COUNT_SEGMENTS)
     val progressColor by animateColorAsState(
         targetValue = MaterialTheme.colorScheme.primary,
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = 500f),
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "progressColor",
     )
-    val trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
 
     Box(modifier.size(size), contentAlignment = Alignment.Center) {
-        Canvas(Modifier.size(size)) {
+        // リング自体は装飾。意味は呼び出し側の説明文で伝える
+        Canvas(Modifier.size(size).clearAndSetSemantics {}) {
             val stroke = this.size.minDimension * strokeFraction
             val radius = (this.size.minDimension - stroke) / 2f
             // 丸キャップが隣とくっつかないよう、キャップ分＋余白をギャップにする
