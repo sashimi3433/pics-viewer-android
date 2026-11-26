@@ -1,0 +1,26 @@
+Categories:
+  - Navigation
+License: GPL-3.0-or-later
+AuthorName: sessapps
+AuthorEmail: contact@sessapps.com
+WebSite: https://advanced-pics.sessapps.com/
+SourceCode: https://github.com/sashimi3433/pics-viewer-android
+IssueTracker: https://github.com/sashimi3433/pics-viewer-android/issues
+
+AutoName: 高度化PICSビューア
+
+RepoType: git
+Repo: https://github.com/sashimi3433/pics-viewer-android.git
+
+Builds:
+  - versionName: 1.5.2
+    versionCode: 8
+    commit: v1.5.2
+    subdir: app
+    gradle:
+      - yes
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.5.2
+CurrentVersionCode: 8

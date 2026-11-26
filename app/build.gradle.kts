@@ -19,8 +19,8 @@ android {
         applicationId = "com.sessapps.advanced_pics_viewer"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.5.1"
+        versionCode = 8
+        versionName = "1.5.2"
     }
 
     androidResources {
@@ -59,6 +59,12 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    // F-Droid は APK 内の暗号化された依存関係メタデータを受け付けないので APK には入れない（AAB は Play 用に残す）
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = true
     }
 
     packaging {

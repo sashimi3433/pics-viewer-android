@@ -496,7 +496,7 @@ private fun NearestCard(
                     }
                 }
                 Text(
-                    "全国 $total 箇所（警察庁「高度化PICS整備交差点」）",
+                    "全国 $total 箇所（警察庁「全国高度化PICS整備交差点」を加工して作成）",
                     Modifier.padding(start = 8.dp, top = 8.dp),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

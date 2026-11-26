@@ -24,16 +24,17 @@ scripts/build-release.sh          # Bastion の鍵で署名した AAB を作る
 
 ## ストアの掲載情報
 
-`docs/store/` の内容を API で登録する（Play Console 上で手で直すと、次に実行したとき上書きされる）。
+`fastlane/metadata/android/ja-JP/` の内容を API で登録する（F-Droid も同じものを読む。Play Console 上で手で直すと、次に実行したとき上書きされる）。
 
 ```sh
 scripts/upload-listing.sh
 ```
 
-- 文言・連絡先: `docs/store/listing.json`（アプリ名、簡単な説明 80 字以内、詳しい説明 4000 字以内、メール、ウェブサイト）
-- アプリアイコン: `docs/store/icon-512.png`（元データ `docs/store/icon.svg`）
-- フィーチャーグラフィック: `docs/store/feature-graphic.png`（元データ `feature-graphic.html` を Chrome のヘッドレスで 1024×500 に書き出す）
-- スマートフォンのスクリーンショット: `docs/store/phone/*.png`（1080×1920。エミュレータで `wm size 1080x1920` とシステム UI のデモモードにして、アプリのデモ表示を撮った）
+- 文言: `title.txt`、`short_description.txt`（80 字以内）、`full_description.txt`（4000 字以内）。連絡先はスクリプトの既定値（contact@sessapps.com、https://advanced-pics.sessapps.com/）
+- アプリアイコン: `images/icon.png`（元データ `docs/store/icon.svg`）
+- フィーチャーグラフィック: `images/featureGraphic.png`（元データ `docs/store/feature-graphic.html` を Chrome のヘッドレスで 1024×500 に書き出す）
+- スマートフォンのスクリーンショット: `images/phoneScreenshots/*.png`（1080×1920。エミュレータで `wm size 1080x1920` とシステム UI のデモモードにして、アプリのデモ表示を撮った）
+- リリースノート: `changelogs/<versionCode>.txt`（F-Droid が使う。Play には `upload-play.sh` の `NOTES` で渡す）
 - API で入れられないもの（Play Console で設定する）: カテゴリ（地図＆ナビ）、タグ、プライバシーポリシー URL、データ セーフティ
 
 ## アプリのコンテンツ（申告の目安）
